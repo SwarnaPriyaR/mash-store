@@ -32,6 +32,64 @@ const getSalePrice = (product, sale) => {
   return null;
 };
 
+const convertDriveUrl = (url) => {
+  if (!url) return url;
+  if (url.includes("googleusercontent.com/d/")) return url;
+
+  const fileDRegex = /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/;
+  const idQueryRegex = /[?&]id=([a-zA-Z0-9_-]+)/;
+  
+  let fileId = null;
+  const dMatch = url.match(fileDRegex);
+  if (dMatch) {
+    fileId = dMatch[1];
+  } else if (url.includes("drive.google.com")) {
+    const queryMatch = url.match(idQueryRegex);
+    if (queryMatch) {
+      fileId = queryMatch[1];
+    }
+  }
+  if (fileId) {
+    return `https://lh3.googleusercontent.com/d/${fileId}`;
+  }
+  return url;
+};
+
+const sendEmailNotification = async (key, msgText, toastFn) => {
+  if (!key) return;
+  try {
+    const res = await fetch("https://api.web3forms.com/submit", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify({
+        access_key: key,
+        subject: "🚨 MASH Store Inventory Alert Report",
+        from_name: "MASH Store Inventory System",
+        message: `Dear Admin,
+
+Here is the latest inventory stock alert report from MASH Store:
+
+${msgText}
+
+Best regards,
+MASH Inventory Bot`
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      toastFn("📧 Real stock alert email dispatched successfully!");
+    } else {
+      toastFn("⚠️ Web3Forms failed to deliver email: " + (data.message || "Unknown error"));
+    }
+  } catch (err) {
+    console.error("Email delivery failed", err);
+    toastFn("❌ Network error: Could not send stock alert email");
+  }
+};
+
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const Icon = {
   Sun: () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>),
@@ -340,6 +398,58 @@ const STYLES = `
 
   @media(max-width:720px) { .detail-grid { grid-template-columns:1fr; } .admin-row { grid-template-columns:48px 1fr 80px 48px; } }
   @media(max-width:600px) { .nav { padding:0 16px; } .products-page,.detail-page,.cart-page,.wishlist-page,.admin-page { padding:24px 16px; } .cart-head { display:none; } .cart-row { grid-template-columns:64px 1fr 48px; } }
+
+  /* ADMIN PORTAL */
+  .admin-portal-layout { display: flex; min-height: 100vh; background: var(--bg); }
+  .admin-sidebar { width: 260px; background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; justify-content: space-between; position: fixed; top: 0; bottom: 0; left: 0; z-index: 10; }
+  .admin-sidebar-top { padding: 24px; }
+  .admin-sidebar-logo { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 0.08em; display: flex; align-items: center; gap: 8px; color: var(--text); margin-bottom: 32px; cursor: pointer; }
+  .admin-sidebar-menu { display: flex; flex-direction: column; gap: 4px; list-style: none; }
+  .admin-sidebar-btn { width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: none; border: none; border-radius: var(--radius-sm); color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; text-align: left; cursor: pointer; transition: all 0.2s; }
+  .admin-sidebar-btn:hover { background: rgba(0,0,0,0.04); color: var(--text); }
+  .dark .admin-sidebar-btn:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+  .admin-sidebar-btn.active { background: var(--accent); color: #fff; font-weight: 600; }
+  .admin-sidebar-btn.active:hover { background: var(--accent); color: #fff; }
+  .admin-sidebar-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+  
+  .admin-main-content { flex: 1; margin-left: 260px; padding: 40px; min-height: 100vh; overflow-y: auto; }
+  .admin-page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
+  .admin-page-title-group { display: flex; flex-direction: column; gap: 4px; }
+  
+  /* STATS CARDS */
+  .admin-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 32px; }
+  .admin-stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; display: flex; flex-direction: column; gap: 8px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+  .admin-stat-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--border); }
+  .admin-stat-card.accent::after { background: var(--accent); }
+  .admin-stat-card.green::after { background: var(--green); }
+  .admin-stat-card.orange::after { background: var(--orange); }
+  .admin-stat-card.purple::after { background: #7c3aed; }
+  
+  .admin-stat-title { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text2); }
+  .admin-stat-number { font-family: 'Bebas Neue', sans-serif; font-size: 40px; color: var(--text); letter-spacing: 0.04em; }
+  .admin-stat-desc { font-size: 12px; color: var(--text2); margin-top: auto; }
+  
+  /* LOGIN CARD */
+  .admin-login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #131110; padding: 24px; }
+  .admin-login-card { width: 100%; max-width: 400px; background: #252220; border: 1px solid #3a3530; border-radius: var(--radius); padding: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); text-align: center; }
+  .admin-login-logo { font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: #f0ebe3; letter-spacing: 0.08em; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; }
+  .admin-login-title { font-size: 16px; font-weight: 500; color: var(--accent); letter-spacing: 0.05em; margin-bottom: 32px; text-transform: uppercase; }
+  
+  /* EXPANDABLE PRODUCT FORM */
+  .admin-form-header { display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; font-weight: 600; font-size: 15px; margin-bottom: 20px; transition: all 0.2s; }
+  .admin-form-header:hover { border-color: var(--accent); }
+  .admin-form-body { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 24px; margin-bottom: 24px; border-top: none; margin-top: -20px; animation: slideDown 0.25s ease-out; }
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+  
+  .img-pick-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 8px; }
+  .img-pick-thumb { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius-sm); border: 2px solid transparent; cursor: pointer; transition: all 0.2s; }
+  .img-pick-thumb:hover { border-color: var(--border); transform: scale(1.03); }
+  .img-pick-thumb.selected { border-color: var(--accent); transform: scale(1.05); }
+  
+  .schedule-type-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+  .schedule-type-tab { flex: 1; padding: 10px; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; color: var(--text2); cursor: pointer; text-align: center; transition: all 0.2s; }
+  .schedule-type-tab:hover { color: var(--text); border-color: var(--accent); }
+  .schedule-type-tab.active { background: var(--surface); border-color: var(--accent); color: var(--accent); }
 `;
 
 // ── Toast hook ────────────────────────────────────────────────────────────────
@@ -368,6 +478,17 @@ function useCountdown(endTime) {
   return remaining > 0 ? `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}` : null;
 }
 
+// ── Hash routing hook ─────────────────────────────────────────────────────────
+function useHash() {
+  const [hash, setHash] = useState(window.location.hash);
+  useEffect(() => {
+    const handleHash = () => setHash(window.location.hash);
+    window.addEventListener("hashchange", handleHash);
+    return () => window.removeEventListener("hashchange", handleHash);
+  }, []);
+  return hash;
+}
+
 // ── Main App ──────────────────────────────────────────────────────────────────
 export default function App() {
   const [dark, setDark] = useState(false);
@@ -379,26 +500,124 @@ export default function App() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [showCheckout, setShowCheckout] = useState(false);
-  const [showAdmin, setShowAdmin] = useState(false);
 
-  // Products with basePrice for sale calculations
-  const [products, setProducts] = useState(() =>
-    INITIAL_PRODUCTS.map(p => ({ ...p, basePrice: p.price }))
-  );
+  // Products with basePrice for sale calculations (initialized from localStorage)
+  const [products, setProducts] = useState(() => {
+    const saved = localStorage.getItem("mash_products");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.map(p => ({ ...p, image: convertDriveUrl(p.image) }));
+        }
+      } catch (e) {
+        console.error("Failed to load products from localStorage", e);
+      }
+    }
+    return INITIAL_PRODUCTS.map(p => ({ ...p, basePrice: p.price, image: convertDriveUrl(p.image) }));
+  });
 
-  // Sale state
-  const [sale, setSale] = useState({ active: false, discount: 0, start: 0, end: 0 });
+  // Sale state (initialized from localStorage)
+  const [sale, setSale] = useState(() => {
+    const saved = localStorage.getItem("mash_sale");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Failed to load sale state from localStorage", e);
+      }
+    }
+    return { active: false, discount: 0, start: 0, end: 0, startTime: null, durationHours: 0 };
+  });
 
-  // Notification log (simulated)
-  const [notifyLog, setNotifyLog] = useState([
-    { time: "09:00 AM", msg: "Stock check: All products above threshold." },
-  ]);
+  // Notification log (initialized from localStorage)
+  const [notifyLog, setNotifyLog] = useState(() => {
+    const saved = localStorage.getItem("mash_notify_log");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Failed to load notifications from localStorage", e);
+      }
+    }
+    return [
+      { time: "09:00 AM", msg: "Stock check: All products above threshold." },
+    ];
+  });
 
   const { toasts, add: toast } = useToast();
+
+  const [emailEnabled, setEmailEnabled] = useState(() => {
+    return localStorage.getItem("mash_email_enabled") === "true";
+  });
+  const [web3FormsKey, setWeb3FormsKey] = useState(() => {
+    return localStorage.getItem("mash_web3forms_key") || "";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("mash_email_enabled", emailEnabled);
+  }, [emailEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem("mash_web3forms_key", web3FormsKey);
+  }, [web3FormsKey]);
+
+  const currentHash = useHash();
+  const hostname = window.location.hostname;
+  const isAdminDomain = hostname.includes("mashstore-admin") || hostname === "mashstore-admin.in" || hostname === "www.mashstore-admin.in";
+  const isLocal = hostname === "localhost" || hostname === "127.0.0.1";
+  const isAdminRoute = isAdminDomain || (isLocal && (currentHash === "#/admin" || currentHash.startsWith("#/admin?")));
 
   useEffect(() => {
     document.documentElement.className = dark ? "dark" : "";
   }, [dark]);
+
+  // Sync state changes to localStorage
+  useEffect(() => {
+    localStorage.setItem("mash_products", JSON.stringify(products));
+  }, [products]);
+
+  useEffect(() => {
+    localStorage.setItem("mash_sale", JSON.stringify(sale));
+  }, [sale]);
+
+  useEffect(() => {
+    localStorage.setItem("mash_notify_log", JSON.stringify(notifyLog));
+  }, [notifyLog]);
+
+  // Tab synchronization storage listener
+  useEffect(() => {
+    const handleStorage = (e) => {
+      if (e.key === "mash_products") {
+        try {
+          const val = JSON.parse(e.newValue);
+          if (Array.isArray(val)) {
+            setProducts(val.map(p => ({ ...p, image: convertDriveUrl(p.image) })));
+          }
+        } catch (err) { console.error(err); }
+      }
+      if (e.key === "mash_sale") {
+        try {
+          const val = JSON.parse(e.newValue);
+          if (val) setSale(val);
+        } catch (err) { console.error(err); }
+      }
+      if (e.key === "mash_notify_log") {
+        try {
+          const val = JSON.parse(e.newValue);
+          if (val) setNotifyLog(val);
+        } catch (err) { console.error(err); }
+      }
+      if (e.key === "mash_email_enabled") {
+        setEmailEnabled(e.newValue === "true");
+      }
+      if (e.key === "mash_web3forms_key") {
+        setWeb3FormsKey(e.newValue || "");
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
 
   // Apply/remove sale prices when sale changes
   useEffect(() => {
@@ -407,6 +626,47 @@ export default function App() {
       return { ...p, price: salePrice !== null ? salePrice : p.basePrice };
     }));
   }, [sale]);
+
+  // Background timer to check and trigger scheduled offers
+  useEffect(() => {
+    const checkScheduledSale = () => {
+      const now = Date.now();
+      if (sale.startTime) {
+        const start = Number(sale.startTime);
+        const durationMs = Number(sale.durationHours) * 3600000;
+        const end = start + durationMs;
+
+        if (now >= start && now <= end) {
+          // Time to start the sale
+          if (!sale.active) {
+            setSale(prev => {
+              const updated = { ...prev, active: true, start, end };
+              localStorage.setItem("mash_sale", JSON.stringify(updated));
+              return updated;
+            });
+            toast(`🎉 Offer live! Sitewide ${sale.discount}% off starts now.`);
+          }
+        } else if (now > end) {
+          // Sale has expired
+          if (sale.active || sale.startTime !== null) {
+            const cleared = { active: false, discount: 0, start: 0, end: 0, startTime: null, durationHours: 0 };
+            setSale(cleared);
+            localStorage.setItem("mash_sale", JSON.stringify(cleared));
+            toast("Offer expired. Prices restored to original.");
+          }
+        } else {
+          // Before start time, guarantee active is false
+          if (sale.active) {
+            setSale(prev => ({ ...prev, active: false }));
+          }
+        }
+      }
+    };
+
+    checkScheduledSale();
+    const interval = setInterval(checkScheduledSale, 1000);
+    return () => clearInterval(interval);
+  }, [sale, toast]);
 
   // Simulated stock-check job (runs at mount to demo; in real app: cron at 9AM & 6PM IST)
   useEffect(() => {
@@ -418,11 +678,23 @@ export default function App() {
       if (low.length) msgs.push(`Low stock: ${low.map(p => p.name + " (qty:" + p.qty + ")").join(", ")}`);
       if (out.length) msgs.push(`Out of stock: ${out.map(p => p.name).join(", ")}`);
       if (msgs.length === 0) msgs.push("All products above threshold.");
-      setNotifyLog(prev => [...prev, { time: now, msg: msgs.join(" | ") }]);
-      // In production: send email to swarnapriya.kr@gmail.com via backend API
+      const msgText = msgs.join(" | ");
+
+      setNotifyLog(prev => {
+        const next = [...prev, { time: now, msg: msgText }];
+        localStorage.setItem("mash_notify_log", JSON.stringify(next));
+        return next;
+      });
+
+      // Send actual email if enabled in storage
+      const key = localStorage.getItem("mash_web3forms_key");
+      const enabled = localStorage.getItem("mash_email_enabled") === "true";
+      if (enabled && key && (low.length || out.length)) {
+        sendEmailNotification(key, msgs.join("\n"), toast);
+      }
     };
     runStockCheck();
-    // Schedule for 9AM and 6PM IST (demo: also fires every 12h from now)
+    
     const msTo9AM = (() => {
       const now = new Date();
       const target = new Date(now);
@@ -479,16 +751,44 @@ export default function App() {
   const grandTotal = cart.reduce((s, x) => s + x.product.price * x.qty, 0);
 
   const isSaleActive = sale.active && Date.now() >= sale.start && Date.now() <= sale.end;
+  const isUpcomingSale = !isSaleActive && sale.startTime && Date.now() < sale.startTime;
+  const hasBanner = isSaleActive || isUpcomingSale;
+
+  if (isAdminRoute) {
+    return (
+      <div style={{ minHeight:"100vh", background:"var(--bg)", color:"var(--text)", fontFamily:"'DM Sans',sans-serif" }}>
+        <style>{STYLES}</style>
+        <AdminPortal
+          products={products}
+          setProducts={setProducts}
+          sale={sale}
+          setSale={setSale}
+          notifyLog={notifyLog}
+          setNotifyLog={setNotifyLog}
+          toast={toast}
+          dark={dark}
+          setDark={setDark}
+          emailEnabled={emailEnabled}
+          setEmailEnabled={setEmailEnabled}
+          web3FormsKey={web3FormsKey}
+          setWeb3FormsKey={setWeb3FormsKey}
+        />
+        {/* TOASTS */}
+        <div className="toast-wrap">{toasts.map(t => <div key={t.id} className="toast">{t.msg}</div>)}</div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight:"100vh", background:"var(--bg)", color:"var(--text)", fontFamily:"'DM Sans',sans-serif" }}>
       <style>{STYLES}</style>
 
-      {/* Sale banner */}
+      {/* Sale banners */}
       {isSaleActive && <SaleBanner sale={sale} />}
+      {isUpcomingSale && <UpcomingSaleBanner sale={sale} />}
 
       {/* NAV */}
-      <nav className="nav" style={{ top: isSaleActive ? 40 : 0 }}>
+      <nav className="nav" style={{ top: hasBanner ? 40 : 0 }}>
         <div className="nav-logo" onClick={() => nav("home")}><Icon.Shirt />MASH</div>
         <div className="nav-right">
           <button className="icon-btn" onClick={() => setDark(d => !d)} title="Toggle theme">
@@ -504,9 +804,11 @@ export default function App() {
               <button className="auth-btn primary" onClick={() => setAuthModal("signup")}>Sign up</button>
             </>
           )}
-          <button className="admin-btn" onClick={() => setShowAdmin(true)} title="Admin">
-            <Icon.Shield /> Admin
-          </button>
+          {isLocal && (
+            <button className="admin-btn" onClick={() => window.open("#/admin", "_blank")} title="Admin Portal">
+              <Icon.Shield /> Admin Portal
+            </button>
+          )}
           <button className="icon-btn" onClick={() => nav("wishlist")} title="Wishlist">
             <Icon.Heart filled={wishCount > 0} />
             {wishCount > 0 && <span className="badge">{wishCount}</span>}
@@ -519,7 +821,7 @@ export default function App() {
       </nav>
 
       {/* PAGES */}
-      <div className="page" style={{ paddingTop: isSaleActive ? 104 : 64 }}>
+      <div className="page" style={{ paddingTop: hasBanner ? 104 : 64 }}>
         {page === "home" && <HomePage nav={nav} />}
         {page === "products" && <ProductsPage products={products} sale={sale} nav={nav} wishlist={wishlist} toggleWishlist={toggleWishlist} />}
         {page === "detail" && selectedProduct && (
@@ -536,9 +838,6 @@ export default function App() {
       {/* CHECKOUT MODAL */}
       {showCheckout && <CheckoutModal cart={cart} grandTotal={grandTotal} onClose={() => setShowCheckout(false)} onSuccess={handleOrderSuccess} />}
 
-      {/* ADMIN */}
-      {showAdmin && <AdminPanel products={products} setProducts={setProducts} sale={sale} setSale={setSale} notifyLog={notifyLog} setNotifyLog={setNotifyLog} onClose={() => setShowAdmin(false)} toast={toast} />}
-
       {/* TOASTS */}
       <div className="toast-wrap">{toasts.map(t => <div key={t.id} className="toast">{t.msg}</div>)}</div>
     </div>
@@ -552,6 +851,17 @@ function SaleBanner({ sale }) {
     <div className="sale-banner" style={{ position:"fixed", top:0, left:0, right:0, zIndex:101, height:40 }}>
       <Icon.Tag /> SALE LIVE — {sale.discount}% OFF EVERYTHING!
       {timer && <span className="sale-timer">Ends in {timer}</span>}
+    </div>
+  );
+}
+
+// ── Upcoming Sale Banner ──────────────────────────────────────────────────────
+function UpcomingSaleBanner({ sale }) {
+  const timer = useCountdown(sale.startTime);
+  return (
+    <div className="sale-banner" style={{ position:"fixed", top:0, left:0, right:0, zIndex:101, height:40, background:"linear-gradient(90deg,#ea580c,#d4af37)", color:"#1a1714" }}>
+      <span style={{ fontSize:15 }}>⏰</span> UPCOMING OFFER: {sale.discount}% DISCOUNT IN &nbsp;
+      {timer && <span className="sale-timer" style={{ background:"rgba(0,0,0,0.15)", color:"#1a1714" }}>{timer}</span>}
     </div>
   );
 }
@@ -935,244 +1245,711 @@ function CheckoutModal({ cart, grandTotal, onClose, onSuccess }) {
   );
 }
 
-// ── Admin Panel ───────────────────────────────────────────────────────────────
-function AdminPanel({ products, setProducts, sale, setSale, notifyLog, setNotifyLog, onClose, toast }) {
-  const [tab, setTab] = useState("inventory");
-  const [editValues, setEditValues] = useState({});
-  const [saleForm, setSaleForm] = useState({ discount: sale.discount || 10, hours: 24 });
+function AdminPortal({ products, setProducts, sale, setSale, notifyLog, setNotifyLog, toast, dark, setDark, emailEnabled, setEmailEnabled, web3FormsKey, setWeb3FormsKey }) {
+  const [authed, setAuthed] = useState(() => sessionStorage.getItem("admin_authed") === "true");
   const [adminPass, setAdminPass] = useState("");
-  const [authed, setAuthed] = useState(false);
+  const [currentSection, setCurrentSection] = useState("dashboard");
 
-  if (!authed) return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal">
-        <button className="modal-close" onClick={onClose}>×</button>
-        <h2 className="modal-title">ADMIN ACCESS</h2>
-        <p className="modal-sub">Enter admin password to continue</p>
-        <div className="form-field">
-          <label className="form-label">Password</label>
-          <input className="form-input" type="password" placeholder="••••••••" value={adminPass} onChange={e => setAdminPass(e.target.value)} onKeyDown={e => e.key === "Enter" && (adminPass === "mash@admin" ? setAuthed(true) : toast("Incorrect password"))} />
+  // Add Product form state
+  const [expandAddForm, setExpandAddForm] = useState(false);
+  const [newProd, setNewProd] = useState({
+    name: "",
+    price: "",
+    qty: "",
+    fit: "Regular",
+    image: "",
+    tags: "Graphic, Unisex",
+    description: "Premium heavy cotton streetwear tee."
+  });
+  const [selectedImgTemplate, setSelectedImgTemplate] = useState("");
+
+  // Sale form state
+  const [saleForm, setSaleForm] = useState({
+    discount: 15,
+    durationHours: 24,
+    startTime: "",
+    mode: "scheduled" // "instant" or "scheduled"
+  });
+
+  const [editValues, setEditValues] = useState({});
+
+  const templates = [
+    "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=600&q=80",
+    "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600&q=80",
+    "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=600&q=80",
+    "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=600&q=80"
+  ];
+
+  if (!authed) {
+    const handleLoginSubmit = () => {
+      if (adminPass === "mash@admin") {
+        setAuthed(true);
+        sessionStorage.setItem("admin_authed", "true");
+        toast("🔓 Admin Portal Access Granted");
+      } else {
+        toast("❌ Incorrect admin password");
+      }
+    };
+
+    return (
+      <div className="admin-login-container">
+        <div className="admin-login-card">
+          <div className="admin-login-logo">
+            <Icon.Shirt /> MASH
+          </div>
+          <h2 className="admin-login-title">Admin Management Portal</h2>
+          <div className="form-field" style={{ textAlign: "left" }}>
+            <label className="form-label" style={{ color: "#9e9288" }}>Password</label>
+            <input
+              className="form-input"
+              type="password"
+              placeholder="••••••••"
+              value={adminPass}
+              onChange={e => setAdminPass(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleLoginSubmit()}
+              style={{ background: "#1e1b19", borderColor: "#3a3530", color: "#f0ebe3" }}
+            />
+          </div>
+          <button
+            className="modal-submit"
+            onClick={handleLoginSubmit}
+            style={{ marginTop: "12px", background: "var(--accent)" }}
+          >
+            ENTER SYSTEM
+          </button>
+          <p style={{ marginTop: "24px", fontSize: "12px", color: "#6b6258" }}>
+            Demo Key: <strong style={{ color: "#9e9288" }}>mash@admin</strong>
+          </p>
         </div>
-        <button className="modal-submit" onClick={() => adminPass === "mash@admin" ? setAuthed(true) : toast("Incorrect password")}>ENTER</button>
-        <p style={{ textAlign:"center", marginTop:12, fontSize:12, color:"var(--text2)" }}>Demo password: <strong>mash@admin</strong></p>
       </div>
-    </div>
-  );
+    );
+  }
 
   const lowStock = products.filter(p => p.qty > 0 && p.qty < 5);
   const outStock = products.filter(p => p.qty === 0);
   const isSaleActive = sale.active && Date.now() >= sale.start && Date.now() <= sale.end;
+  const isSaleScheduled = !isSaleActive && sale.startTime && Date.now() < sale.startTime;
 
   const updateProduct = (id, field, value) => {
-    setProducts(prev => prev.map(p => {
-      if (p.id !== id) return p;
-      const updated = { ...p, [field]: field === "qty" ? Math.max(0, parseInt(value)||0) : field === "price" || field === "basePrice" ? parseFloat(value)||p.basePrice : value };
-      if (field === "basePrice") updated.price = isSaleActive ? Math.round(updated.basePrice * (1 - sale.discount/100)) : updated.basePrice;
+    setProducts(prev => {
+      const updated = prev.map(p => {
+        if (p.id !== id) return p;
+        const updatedObj = {
+          ...p,
+          [field]: field === "qty" ? Math.max(0, parseInt(value) || 0) :
+                   field === "basePrice" ? parseFloat(value) || p.basePrice : value
+        };
+        if (field === "basePrice") {
+          updatedObj.price = isSaleActive ? Math.round(updatedObj.basePrice * (1 - sale.discount / 100)) : updatedObj.basePrice;
+        }
+        return updatedObj;
+      });
+      localStorage.setItem("mash_products", JSON.stringify(updated));
       return updated;
-    }));
+    });
   };
 
-  const removeProduct = (id) => { setProducts(prev => prev.filter(p => p.id !== id)); toast("Product removed"); };
-
-  const activateSale = () => {
-    const start = Date.now();
-    const end = start + saleForm.hours * 3600000;
-    setSale({ active: true, discount: saleForm.discount, start, end });
-    setProducts(prev => prev.map(p => ({ ...p, price: Math.round(p.basePrice * (1 - saleForm.discount/100)) })));
-    toast(`🎉 Sale activated! ${saleForm.discount}% off for ${saleForm.hours}h`);
+  const removeProduct = (id) => {
+    const updated = products.filter(p => p.id !== id);
+    setProducts(updated);
+    localStorage.setItem("mash_products", JSON.stringify(updated));
+    toast("Product removed from inventory");
   };
 
-  const deactivateSale = () => {
-    setSale({ active: false, discount: 0, start: 0, end: 0 });
-    setProducts(prev => prev.map(p => ({ ...p, price: p.basePrice })));
-    toast("Sale ended. Prices restored.");
+  const handleAddProduct = (e) => {
+    e.preventDefault();
+    if (!newProd.name.trim()) { toast("Product name is required"); return; }
+    const baseP = parseFloat(newProd.price);
+    if (isNaN(baseP) || baseP <= 0) { toast("Base price must be a valid positive number"); return; }
+    const quantity = parseInt(newProd.qty);
+    if (isNaN(quantity) || quantity < 0) { toast("Quantity must be a valid non-negative integer"); return; }
+
+    const nextId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
+    const finalPrice = isSaleActive ? Math.round(baseP * (1 - sale.discount / 100)) : baseP;
+
+    const productToAdd = {
+      id: nextId,
+      name: newProd.name.trim(),
+      basePrice: baseP,
+      price: finalPrice,
+      qty: quantity,
+      fit: newProd.fit,
+      image: convertDriveUrl(newProd.image.trim()) || templates[0],
+      tags: newProd.tags.split(",").map(t => t.trim()).filter(Boolean),
+      description: newProd.description.trim() || "Premium quality T-shirt from MASH Store.",
+      reviews: []
+    };
+
+    const updated = [...products, productToAdd];
+    setProducts(updated);
+    localStorage.setItem("mash_products", JSON.stringify(updated));
+
+    // Reset Form
+    setNewProd({
+      name: "",
+      price: "",
+      qty: "",
+      fit: "Regular",
+      image: "",
+      tags: "Graphic, Unisex",
+      description: "Premium heavy cotton streetwear tee."
+    });
+    setSelectedImgTemplate("");
+    setExpandAddForm(false);
+
+    // Update Logs
+    const nowStr = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+    const logMsg = `Added new product "${productToAdd.name}" to inventory (Qty: ${productToAdd.qty})`;
+    setNotifyLog(prev => {
+      const next = [...prev, { time: nowStr, msg: logMsg }];
+      localStorage.setItem("mash_notify_log", JSON.stringify(next));
+      return next;
+    });
+
+    toast(`🎉 "${productToAdd.name}" added successfully!`);
+  };
+
+  const handleSetSale = (e) => {
+    e.preventDefault();
+    const discount = parseInt(saleForm.discount);
+    if (isNaN(discount) || discount < 1 || discount > 90) { toast("Discount must be between 1% and 90%"); return; }
+    const hours = parseFloat(saleForm.durationHours);
+    if (isNaN(hours) || hours <= 0) { toast("Duration must be a positive number of hours"); return; }
+
+    if (saleForm.mode === "instant") {
+      const start = Date.now();
+      const end = start + hours * 3600000;
+      const newSale = { active: true, discount, start, end, startTime: start, durationHours: hours };
+      setSale(newSale);
+      localStorage.setItem("mash_sale", JSON.stringify(newSale));
+      toast(`🎉 Sale activated! ${discount}% off for ${hours}h`);
+    } else {
+      if (!saleForm.startTime) { toast("Please select a start date and time for the scheduled offer"); return; }
+      const start = new Date(saleForm.startTime).getTime();
+      if (start <= Date.now()) { toast("Start time must be in the future"); return; }
+      const end = start + hours * 3600000;
+      const newSale = { active: false, discount, start, end, startTime: start, durationHours: hours };
+      setSale(newSale);
+      localStorage.setItem("mash_sale", JSON.stringify(newSale));
+
+      const startTimeStr = new Date(start).toLocaleString("en-IN", { dateStyle: "short", timeStyle: "short" });
+      toast(`⏰ Offer scheduled to start on ${startTimeStr}`);
+    }
+  };
+
+  const handleCancelSale = () => {
+    const cleared = { active: false, discount: 0, start: 0, end: 0, startTime: null, durationHours: 0 };
+    setSale(cleared);
+    localStorage.setItem("mash_sale", JSON.stringify(cleared));
+    toast("Offer cancelled. Prices restored.");
   };
 
   const runManualCheck = () => {
     const low = products.filter(p => p.qty < 5 && p.qty > 0);
     const out = products.filter(p => p.qty === 0);
-    const now = new Date().toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit", hour12:true });
-    let msg = low.length ? `Low stock: ${low.map(p => p.name+" (qty:"+p.qty+")").join(", ")}` : "";
+    const now = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+    let msg = low.length ? `Low stock: ${low.map(p => p.name + " (qty:" + p.qty + ")").join(", ")}` : "";
     if (out.length) msg += (msg ? " | " : "") + `Out of stock: ${out.map(p => p.name).join(", ")}`;
     if (!msg) msg = "All products above threshold.";
-    setNotifyLog(prev => [...prev, { time: now, msg }]);
+    setNotifyLog(prev => {
+      const next = [...prev, { time: now, msg }];
+      localStorage.setItem("mash_notify_log", JSON.stringify(next));
+      return next;
+    });
     toast("📧 Stock check run — email sent to swarnapriya.kr@gmail.com");
   };
 
+  const handleLogout = () => {
+    setAuthed(false);
+    sessionStorage.removeItem("admin_authed");
+    toast("🔒 Logged out of Admin Portal");
+  };
+
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:"var(--radius)", width:"100%", maxWidth:900, maxHeight:"92vh", overflowY:"auto", animation:"modalIn 0.22s ease", boxShadow:"var(--shadow-lg)" }}>
-        <div style={{ padding:"24px 32px 0", borderBottom:"1px solid var(--border)", position:"sticky", top:0, background:"var(--surface)", zIndex:2 }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
-            <div>
-              <h1 className="admin-title">ADMIN PANEL</h1>
-              <p className="admin-sub">Manage inventory, pricing, and sales for MASH</p>
-            </div>
-            <button className="modal-close" style={{ position:"relative", top:0, right:0 }} onClick={onClose}>×</button>
+    <div className="admin-portal-layout">
+      {/* SIDEBAR */}
+      <aside className="admin-sidebar">
+        <div className="admin-sidebar-top">
+          <div className="admin-sidebar-logo" onClick={() => setCurrentSection("dashboard")}>
+            <Icon.Shirt /> MASH Admin
           </div>
-          <div className="admin-tabs">
-            {[["inventory","📦 Inventory"],["sale","🏷️ Sale Control"],["notifications","🔔 Notifications"]].map(([id,label]) => (
-              <button key={id} className={`admin-tab ${tab === id ? "active" : ""}`} onClick={() => setTab(id)}>{label}</button>
-            ))}
-          </div>
+          <ul className="admin-sidebar-menu">
+            <li>
+              <button className={`admin-sidebar-btn ${currentSection === "dashboard" ? "active" : ""}`} onClick={() => setCurrentSection("dashboard")}>
+                📊 Dashboard
+              </button>
+            </li>
+            <li>
+              <button className={`admin-sidebar-btn ${currentSection === "inventory" ? "active" : ""}`} onClick={() => setCurrentSection("inventory")}>
+                📦 Inventory Manager
+              </button>
+            </li>
+            <li>
+              <button className={`admin-sidebar-btn ${currentSection === "sale" ? "active" : ""}`} onClick={() => setCurrentSection("sale")}>
+                🏷️ Sale Controller
+              </button>
+            </li>
+            <li>
+              <button className={`admin-sidebar-btn ${currentSection === "notifications" ? "active" : ""}`} onClick={() => setCurrentSection("notifications")}>
+                🔔 System Logs
+              </button>
+            </li>
+          </ul>
         </div>
+        <div className="admin-sidebar-footer">
+          <button className="admin-sidebar-btn" onClick={() => window.open(isLocal ? "http://localhost:5173" : "https://mashstore.in", "_blank")} style={{ border: "1px solid var(--border)" }}>
+            🌐 Live Storefront ↗
+          </button>
+          <button className="admin-sidebar-btn" onClick={() => setDark(d => !d)} style={{ border: "1px solid var(--border)" }}>
+            {dark ? "☀️ Light Mode" : "🌙 Dark Mode"}
+          </button>
+          <button className="admin-sidebar-btn" onClick={handleLogout} style={{ color: "var(--accent)", border: "1.5px solid var(--accent)", fontWeight: "600" }}>
+            🚪 Exit Admin
+          </button>
+        </div>
+      </aside>
 
-        <div style={{ padding:"28px 32px 32px" }}>
-
-          {/* ── INVENTORY ── */}
-          {tab === "inventory" && (
-            <div>
-              <div className="admin-stat-grid">
-                <div className="admin-stat"><div className="admin-stat-label">Total Products</div><div className="admin-stat-val">{products.length}</div></div>
-                <div className="admin-stat"><div className="admin-stat-label">Total Stock</div><div className="admin-stat-val">{products.reduce((s,p) => s+p.qty,0)}</div></div>
-                <div className="admin-stat"><div className="admin-stat-label">Low Stock (&lt;5)</div><div className={`admin-stat-val ${lowStock.length > 0 ? "warn" : ""}`}>{lowStock.length}</div></div>
-                <div className="admin-stat"><div className="admin-stat-label">Out of Stock</div><div className={`admin-stat-val ${outStock.length > 0 ? "danger" : ""}`}>{outStock.length}</div></div>
+      {/* MAIN CONTAINER */}
+      <main className="admin-main-content">
+        {/* SECTION 1: DASHBOARD OVERVIEW */}
+        {currentSection === "dashboard" && (
+          <div>
+            <header className="admin-page-header">
+              <div className="admin-page-title-group">
+                <h1 className="admin-title">DASHBOARD OVERVIEW</h1>
+                <p className="admin-sub">Real-time status overview of MASH clothing store</p>
               </div>
+            </header>
 
-              {lowStock.length > 0 && (
-                <div className="alert-banner">
-                  <span className="alert-icon">⚠️</span>
-                  <div className="alert-text"><strong>Low stock alert:</strong> {lowStock.map(p => `${p.name} (${p.qty} left)`).join(", ")}</div>
-                </div>
-              )}
+            <div className="admin-stats-grid">
+              <div className="admin-stat-card purple">
+                <span className="admin-stat-title">Total Products</span>
+                <span className="admin-stat-number">{products.length}</span>
+                <span className="admin-stat-desc">Active drops listed in catalog</span>
+              </div>
+              <div className="admin-stat-card green">
+                <span className="admin-stat-title">Total Inventory Units</span>
+                <span className="admin-stat-number">{products.reduce((acc, p) => acc + p.qty, 0)}</span>
+                <span className="admin-stat-desc">Tees available in warehouse</span>
+              </div>
+              <div className="admin-stat-card orange">
+                <span className="admin-stat-title">Active Offer</span>
+                <span className="admin-stat-number">{isSaleActive ? `${sale.discount}% OFF` : "None"}</span>
+                <span className="admin-stat-desc">{isSaleActive ? "Discount currently applied sitewide" : "Regular pricing is active"}</span>
+              </div>
+              <div className="admin-stat-card accent">
+                <span className="admin-stat-title">Scheduled Offer</span>
+                <span className="admin-stat-number">{isSaleScheduled ? `${sale.discount}% OFF` : "No"}</span>
+                <span className="admin-stat-desc">
+                  {isSaleScheduled ? `Starting ${new Date(sale.startTime).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })}` : "No scheduled countdowns"}
+                </span>
+              </div>
+            </div>
 
-              <div className="admin-card">
-                <div className="admin-card-title">📦 Product Inventory</div>
-                <div style={{ display:"grid", gridTemplateColumns:"60px 1fr 100px 110px 110px 110px 48px", gap:12, padding:"8px 16px", background:"var(--bg2)", borderRadius:"var(--radius-sm) var(--radius-sm) 0 0", borderBottom:"1px solid var(--border)" }}>
-                  {["","Product","Qty","Adj. Qty","Base Price","Fit",""].map((h,i) => <span key={i} style={{ fontSize:11, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:"var(--text2)" }}>{h}</span>)}
+            {lowStock.length > 0 && (
+              <div className="alert-banner">
+                <span className="alert-icon">⚠️</span>
+                <div className="alert-text">
+                  <strong>Low stock items warning:</strong> {lowStock.map(p => `${p.name} (${p.qty} left)`).join(", ")}
                 </div>
-                {products.map(p => (
-                  <div key={p.id} style={{ display:"grid", gridTemplateColumns:"60px 1fr 100px 110px 110px 110px 48px", gap:12, alignItems:"center", padding:"12px 16px", borderBottom:"1px solid var(--border)" }}>
-                    <img src={p.image} alt={p.name} className="admin-thumb" />
-                    <div><div className="admin-name">{p.name}</div><div className="admin-id">ID: {p.id}</div></div>
-                    <span className={`admin-qty-badge ${p.qty === 0 ? "qty-out" : p.qty < 5 ? "qty-low" : "qty-ok"}`}>{p.qty}</span>
-                    <input className="admin-input" type="number" placeholder="New qty"
-                      value={editValues[`qty_${p.id}`] ?? ""}
-                      onChange={e => setEditValues(v => ({ ...v, [`qty_${p.id}`]: e.target.value }))}
-                      onBlur={e => { if (e.target.value !== "") { updateProduct(p.id, "qty", e.target.value); setEditValues(v => ({ ...v, [`qty_${p.id}`]: "" })); toast(`Stock updated for ${p.name}`); }}}
-                    />
-                    <input className="admin-input" type="number" placeholder="Base price"
-                      value={editValues[`price_${p.id}`] ?? ""}
-                      onChange={e => setEditValues(v => ({ ...v, [`price_${p.id}`]: e.target.value }))}
-                      onBlur={e => { if (e.target.value !== "") { updateProduct(p.id, "basePrice", e.target.value); setEditValues(v => ({ ...v, [`price_${p.id}`]: "" })); toast(`Price updated for ${p.name}`); }}}
-                    />
-                    <select className="admin-input" value={p.fit} onChange={e => { updateProduct(p.id, "fit", e.target.value); toast(`Fit updated`); }}>
-                      <option>Regular</option><option>Oversized</option>
-                    </select>
-                    <button className="admin-del-btn" onClick={() => removeProduct(p.id)} title="Remove product"><Icon.Trash /></button>
+              </div>
+            )}
+
+            <div className="admin-card" style={{ marginTop: "24px" }}>
+              <div className="admin-card-title">📋 Recent Logs Summary</div>
+              <div className="notify-log" style={{ minHeight: "150px" }}>
+                {[...notifyLog].reverse().slice(0, 5).map((log, i) => (
+                  <div className="notify-item" key={i}>
+                    <span className="notify-time">{log.time}</span>
+                    <span>{log.msg}</span>
                   </div>
                 ))}
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* ── SALE CONTROL ── */}
-          {tab === "sale" && (
-            <div>
-              <div className="admin-card">
-                <div className="admin-card-title">
-                  🏷️ Sale Status &nbsp;
-                  {isSaleActive ? <span className="sale-active-badge">● LIVE</span> : <span className="sale-inactive-badge">○ Inactive</span>}
-                </div>
-                {isSaleActive ? (
-                  <div>
-                    <p style={{ fontSize:14, color:"var(--text2)", marginBottom:16 }}>Sale is currently live with <strong>{sale.discount}%</strong> discount across all products.</p>
-                    <button className="admin-action-btn" style={{ background:"#fee2e2", color:"#dc2626", borderColor:"#dc2626" }} onClick={deactivateSale}>⏹ End Sale Now</button>
+        {/* SECTION 2: INVENTORY MANAGER */}
+        {currentSection === "inventory" && (
+          <div>
+            <header className="admin-page-header">
+              <div className="admin-page-title-group">
+                <h1 className="admin-title">INVENTORY MANAGER</h1>
+                <p className="admin-sub">Insert new products and adjust stock parameters</p>
+              </div>
+            </header>
+
+            {/* EXPANDABLE ADD PRODUCT FORM */}
+            <div
+              className="admin-form-header"
+              onClick={() => setExpandAddForm(!expandAddForm)}
+              style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+            >
+              <span>{expandAddForm ? "➖ HIDE ADD PRODUCT FORM" : "➕ ADD NEW PRODUCT TO CATALOG"}</span>
+              <span style={{ fontSize: "18px" }}>{expandAddForm ? "▲" : "▼"}</span>
+            </div>
+
+            {expandAddForm && (
+              <form className="admin-form-body" onSubmit={handleAddProduct}>
+                <div className="sale-form">
+                  <div className="form-field">
+                    <label className="form-label">Product Name *</label>
+                    <input
+                      className="form-input"
+                      placeholder="e.g. Vintage Samurai Tee"
+                      value={newProd.name}
+                      onChange={e => setNewProd({ ...newProd, name: e.target.value })}
+                      required
+                    />
                   </div>
-                ) : (
-                  <div>
-                    <p style={{ fontSize:14, color:"var(--text2)", marginBottom:20 }}>Set a sitewide discount for a limited time. All product prices will drop automatically.</p>
-                    <div className="sale-form">
-                      <div className="form-field">
-                        <label className="form-label">Discount Percentage</label>
-                        <input className="form-input" type="number" min={1} max={90} placeholder="e.g. 20" value={saleForm.discount} onChange={e => setSaleForm(f => ({ ...f, discount: Math.min(90, Math.max(1, parseInt(e.target.value)||1)) }))} />
-                      </div>
-                      <div className="form-field">
-                        <label className="form-label">Duration (Hours)</label>
-                        <input className="form-input" type="number" min={1} max={720} placeholder="e.g. 24" value={saleForm.hours} onChange={e => setSaleForm(f => ({ ...f, hours: Math.max(1, parseInt(e.target.value)||1) }))} />
-                      </div>
-                      <div className="form-field full">
-                        <div style={{ background:"var(--bg2)", border:"1px solid var(--border)", borderRadius:"var(--radius-sm)", padding:"12px 16px", fontSize:13, color:"var(--text2)" }}>
-                          Preview: All prices will drop by <strong>{saleForm.discount}%</strong> for <strong>{saleForm.hours} hour{saleForm.hours !== 1 ? "s" : ""}</strong>. A countdown timer will show in the top banner.
-                        </div>
+                  <div className="form-field">
+                    <label className="form-label">Base Price (INR) *</label>
+                    <input
+                      className="form-input"
+                      type="number"
+                      placeholder="e.g. 799"
+                      value={newProd.price}
+                      onChange={e => setNewProd({ ...newProd, price: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label className="form-label">Stock Quantity *</label>
+                    <input
+                      className="form-input"
+                      type="number"
+                      placeholder="e.g. 20"
+                      value={newProd.qty}
+                      onChange={e => setNewProd({ ...newProd, qty: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label className="form-label">Fit Style</label>
+                    <select
+                      className="admin-input"
+                      style={{ padding: "10px 14px", height: "43px" }}
+                      value={newProd.fit}
+                      onChange={e => setNewProd({ ...newProd, fit: e.target.value })}
+                    >
+                      <option>Regular</option>
+                      <option>Oversized</option>
+                    </select>
+                  </div>
+                  <div className="form-field full">
+                    <label className="form-label">Image URL *</label>
+                    <input
+                      className="form-input"
+                      placeholder="Select template below or paste custom image link"
+                      value={newProd.image}
+                      onChange={e => {
+                        setNewProd({ ...newProd, image: e.target.value });
+                        setSelectedImgTemplate("");
+                      }}
+                    />
+                    <div style={{ marginTop: "10px" }}>
+                      <span className="form-label" style={{ fontSize: "11px" }}>Quick Pick Image Template:</span>
+                      <div className="img-pick-grid">
+                        {templates.map((t, idx) => (
+                          <img
+                            key={idx}
+                            src={t}
+                            alt=""
+                            className={`img-pick-thumb ${selectedImgTemplate === t ? "selected" : ""}`}
+                            onClick={() => {
+                              setSelectedImgTemplate(t);
+                              setNewProd({ ...newProd, image: t });
+                            }}
+                          />
+                        ))}
                       </div>
                     </div>
-                    <button className="admin-action-btn" style={{ background:"var(--accent)", color:"#fff", borderColor:"var(--accent)", padding:"12px 28px", fontSize:14 }} onClick={activateSale}>
-                      🚀 Activate Sale
-                    </button>
                   </div>
+                  <div className="form-field full">
+                    <label className="form-label">Tags (comma separated)</label>
+                    <input
+                      className="form-input"
+                      placeholder="Streetwear, Unisex, Vintage"
+                      value={newProd.tags}
+                      onChange={e => setNewProd({ ...newProd, tags: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-field full">
+                    <label className="form-label">Product Description</label>
+                    <textarea
+                      className="form-input"
+                      style={{ minHeight: "80px", resize: "vertical" }}
+                      placeholder="Description of fabric, fits, GSM, print details etc."
+                      value={newProd.description}
+                      onChange={e => setNewProd({ ...newProd, description: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  className="admin-action-btn"
+                  style={{ background: "var(--accent)", color: "#fff", borderColor: "var(--accent)", width: "200px", padding: "12px", marginTop: "12px", fontSize: "14px" }}
+                >
+                  Save Product to Live Web Page
+                </button>
+              </form>
+            )}
+
+            {/* PRODUCT LIST */}
+            <div className="admin-card">
+              <div className="admin-card-title">📦 Product Catalog List</div>
+              <div style={{ display: "grid", gridTemplateColumns: "60px 1fr 100px 110px 110px 110px 48px", gap: 12, padding: "8px 16px", background: "var(--bg2)", borderRadius: "var(--radius-sm) var(--radius-sm) 0 0", borderBottom: "1px solid var(--border)" }}>
+                {["", "Product Details", "Qty", "Stock Adj.", "Base Price", "Fit", ""].map((h, i) => (
+                  <span key={i} style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text2)" }}>{h}</span>
+                ))}
+              </div>
+              {products.map(p => (
+                <div key={p.id} style={{ display: "grid", gridTemplateColumns: "60px 1fr 100px 110px 110px 110px 48px", gap: 12, alignItems: "center", padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
+                  <img src={p.image} alt={p.name} className="admin-thumb" />
+                  <div>
+                    <div className="admin-name">{p.name}</div>
+                    <div className="admin-id">ID: {p.id}</div>
+                  </div>
+                  <span className={`admin-qty-badge ${p.qty === 0 ? "qty-out" : p.qty < 5 ? "qty-low" : "qty-ok"}`}>
+                    {p.qty}
+                  </span>
+                  <input
+                    className="admin-input"
+                    type="number"
+                    placeholder="New qty"
+                    value={editValues[`qty_${p.id}`] ?? ""}
+                    onChange={e => setEditValues({ ...editValues, [`qty_${p.id}`]: e.target.value })}
+                    onBlur={e => {
+                      if (e.target.value !== "") {
+                        updateProduct(p.id, "qty", e.target.value);
+                        setEditValues({ ...editValues, [`qty_${p.id}`]: "" });
+                        toast(`Stock updated for ${p.name}`);
+                      }
+                    }}
+                  />
+                  <input
+                    className="admin-input"
+                    type="number"
+                    placeholder="Base price"
+                    value={editValues[`price_${p.id}`] ?? ""}
+                    onChange={e => setEditValues({ ...editValues, [`price_${p.id}`]: e.target.value })}
+                    onBlur={e => {
+                      if (e.target.value !== "") {
+                        updateProduct(p.id, "basePrice", e.target.value);
+                        setEditValues({ ...editValues, [`price_${p.id}`]: "" });
+                        toast(`Base price updated for ${p.name}`);
+                      }
+                    }}
+                  />
+                  <select
+                    className="admin-input"
+                    value={p.fit}
+                    onChange={e => {
+                      updateProduct(p.id, "fit", e.target.value);
+                      toast(`Fit updated for ${p.name}`);
+                    }}
+                  >
+                    <option>Regular</option>
+                    <option>Oversized</option>
+                  </select>
+                  <button className="admin-del-btn" onClick={() => removeProduct(p.id)} title="Delete product">
+                    <Icon.Trash />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* SECTION 3: SALE CONTROLLER */}
+        {currentSection === "sale" && (
+          <div>
+            <header className="admin-page-header">
+              <div className="admin-page-title-group">
+                <h1 className="admin-title">SALE CONTROL CENTRE</h1>
+                <p className="admin-sub">Configure sitewide scheduled discounts and flash offers</p>
+              </div>
+            </header>
+
+            <div className="admin-card">
+              <div className="admin-card-title">
+                🏷️ Active Offer Status &nbsp;
+                {isSaleActive ? (
+                  <span className="sale-active-badge">● LIVE ACTIVE</span>
+                ) : isSaleScheduled ? (
+                  <span className="sale-inactive-badge" style={{ background: "#fef3c7", color: "#b45309" }}>⏰ SCHEDULED</span>
+                ) : (
+                  <span className="sale-inactive-badge">○ INACTIVE</span>
                 )}
               </div>
-
-              <div className="admin-card">
-                <div className="admin-card-title">📊 Price Preview After Sale</div>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12 }}>
-                  {products.map(p => {
-                    const saleP = Math.round(p.basePrice * (1 - saleForm.discount/100));
-                    return (
-                      <div key={p.id} style={{ background:"var(--bg2)", borderRadius:"var(--radius-sm)", padding:"12px 14px" }}>
-                        <div style={{ fontSize:13, fontWeight:600, marginBottom:4 }}>{p.name}</div>
-                        <div style={{ display:"flex", gap:8, alignItems:"baseline" }}>
-                          <span style={{ fontFamily:"'Bebas Neue'", fontSize:18, color:"var(--accent)" }}>₹{saleP}</span>
-                          <span style={{ fontSize:12, color:"var(--text2)", textDecoration:"line-through" }}>₹{p.basePrice}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
+              {isSaleActive && (
+                <div>
+                  <p style={{ fontSize: 14, color: "var(--text2)", marginBottom: 16 }}>
+                    Discount offer is currently live at <strong>{sale.discount}% off</strong>. countdown timer is visible on store.
+                  </p>
+                  <button
+                    className="admin-action-btn"
+                    style={{ background: "#fee2e2", color: "#dc2626", borderColor: "#dc2626" }}
+                    onClick={handleCancelSale}
+                  >
+                    ⏹ End Active Sale Now
+                  </button>
                 </div>
+              )}
+              {isSaleScheduled && (
+                <div>
+                  <div style={{ fontSize: 14, color: "var(--text2)", marginBottom: 16 }}>
+                    A sitewide <strong>{sale.discount}% discount</strong> is scheduled to trigger.
+                    <div style={{ marginTop: "8px" }}>
+                      📅 Start time: <strong>{new Date(sale.startTime).toLocaleString("en-IN")}</strong>
+                    </div>
+                    <div>
+                      ⏳ Duration: <strong>{sale.durationHours} Hours</strong>
+                    </div>
+                  </div>
+                  <button
+                    className="admin-action-btn"
+                    style={{ background: "#fee2e2", color: "#dc2626", borderColor: "#dc2626" }}
+                    onClick={handleCancelSale}
+                  >
+                    ⏹ Cancel Scheduled Sale
+                  </button>
+                </div>
+              )}
+              {!isSaleActive && !isSaleScheduled && (
+                <p style={{ fontSize: 14, color: "var(--text2)" }}>No active offers or scheduled count downs at this moment.</p>
+              )}
+            </div>
+
+            <div className="admin-card">
+              <div className="admin-card-title">🚀 Launch/Schedule New Offer</div>
+              <div className="schedule-type-tabs">
+                <button
+                  className={`schedule-type-tab ${saleForm.mode === "scheduled" ? "active" : ""}`}
+                  onClick={() => setSaleForm({ ...saleForm, mode: "scheduled" })}
+                >
+                  📅 Scheduled Offer (Starts Automatically At Set Time)
+                </button>
+                <button
+                  className={`schedule-type-tab ${saleForm.mode === "instant" ? "active" : ""}`}
+                  onClick={() => setSaleForm({ ...saleForm, mode: "instant" })}
+                >
+                  ⚡ Instant Flash Sale (Starts Immediately)
+                </button>
+              </div>
+
+              <form onSubmit={handleSetSale}>
+                <div className="sale-form">
+                  <div className="form-field">
+                    <label className="form-label">Discount Percentage (%)</label>
+                    <input
+                      className="form-input"
+                      type="number"
+                      min={1}
+                      max={90}
+                      value={saleForm.discount}
+                      onChange={e => setSaleForm({ ...saleForm, discount: Math.min(90, Math.max(1, parseInt(e.target.value) || 1)) })}
+                      required
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label className="form-label">Duration (Hours)</label>
+                    <input
+                      className="form-input"
+                      type="number"
+                      min={1}
+                      max={720}
+                      value={saleForm.durationHours}
+                      onChange={e => setSaleForm({ ...saleForm, durationHours: Math.max(1, parseInt(e.target.value) || 1) })}
+                      required
+                    />
+                  </div>
+                  {saleForm.mode === "scheduled" && (
+                    <div className="form-field full">
+                      <label className="form-label">Offer Starting Date & Time</label>
+                      <input
+                        className="form-input"
+                        type="datetime-local"
+                        value={saleForm.startTime}
+                        onChange={e => setSaleForm({ ...saleForm, startTime: e.target.value })}
+                        required
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  className="admin-action-btn"
+                  style={{ background: "var(--accent)", color: "#fff", borderColor: "var(--accent)", padding: "12px 28px", marginTop: "20px", fontSize: "14px" }}
+                >
+                  {saleForm.mode === "instant" ? "⚡ Activate Instant Sale" : "📅 Lock & Schedule Offer"}
+                </button>
+              </form>
+            </div>
+
+            <div className="admin-card">
+              <div className="admin-card-title">📊 Prices Preview Panel ({saleForm.discount}% Discount)</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12 }}>
+                {products.map(p => {
+                  const saleP = Math.round(p.basePrice * (1 - saleForm.discount / 100));
+                  return (
+                    <div key={p.id} style={{ background: "var(--bg2)", borderRadius: "var(--radius-sm)", padding: "12px 14px" }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{p.name}</div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+                        <span style={{ fontFamily: "'Bebas Neue'", fontSize: 18, color: "var(--accent)" }}>₹{saleP}</span>
+                        <span style={{ fontSize: 12, color: "var(--text2)", textDecoration: "line-through" }}>₹{p.basePrice}</span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* ── NOTIFICATIONS ── */}
-          {tab === "notifications" && (
-            <div>
-              <div className="admin-card">
-                <div className="admin-card-title"><Icon.Bell /> Stock Alert Settings</div>
-                <p style={{ fontSize:14, color:"var(--text2)", marginBottom:16, lineHeight:1.6 }}>
-                  Automatic stock check emails are sent to <strong>swarnapriya.kr@gmail.com</strong> twice daily at <strong>9:00 AM IST</strong> and <strong>6:00 PM IST</strong>. Any product with quantity below 5 triggers an alert.
-                </p>
-                <div style={{ display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
-                  <div style={{ background:"var(--bg2)", border:"1px solid var(--border)", borderRadius:"var(--radius-sm)", padding:"10px 16px", fontSize:13, display:"flex", gap:8, alignItems:"center" }}>
-                    <span>📧</span> swarnapriya.kr@gmail.com
-                  </div>
-                  <div style={{ background:"var(--bg2)", border:"1px solid var(--border)", borderRadius:"var(--radius-sm)", padding:"10px 16px", fontSize:13, display:"flex", gap:8, alignItems:"center" }}>
-                    <span>⏰</span> 9:00 AM & 6:00 PM IST
-                  </div>
-                  <button className="admin-action-btn" onClick={runManualCheck}>▶ Run Check Now</button>
-                </div>
+        {/* SECTION 4: NOTIFICATIONS LOG */}
+        {currentSection === "notifications" && (
+          <div>
+            <header className="admin-page-header">
+              <div className="admin-page-title-group">
+                <h1 className="admin-title">SYSTEM ALERTS & LOGS</h1>
+                <p className="admin-sub">Monitor automatic alerts and view diagnostic execution steps</p>
               </div>
+            </header>
 
-              <div className="admin-card">
-                <div className="admin-card-title">📋 Notification Log</div>
-                <div className="notify-log">
-                  {[...notifyLog].reverse().map((n, i) => (
-                    <div className="notify-item" key={i}>
-                      <span className="notify-time">{n.time}</span>
-                      <span>{n.msg}</span>
-                    </div>
-                  ))}
-                </div>
+            <div className="admin-card">
+              <div className="admin-card-title">
+                <Icon.Bell /> Stock Automated Alert Configurations
               </div>
+              <p style={{ fontSize: 14, color: "var(--text2)", marginBottom: 16, lineHeight: 1.6 }}>
+                Automatic stock check emails are run periodically twice daily at <strong>9:00 AM IST</strong> and <strong>6:00 PM IST</strong>. Any product dropping below 5 units automatically reports an alert to the console and generates logs.
+              </p>
+              <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "10px 16px", fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}>
+                  <span>📧</span> swarnapriya.kr@gmail.com
+                </div>
+                <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "10px 16px", fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}>
+                  <span>⏰</span> 9:00 AM & 6:00 PM IST
+                </div>
+                <button className="admin-action-btn" onClick={runManualCheck}>▶ Execute Manual Stock Check Now</button>
+              </div>
+            </div>
 
-              <div className="admin-card">
-                <div className="admin-card-title">📦 Current Stock Overview</div>
-                {products.map(p => (
-                  <div key={p.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 0", borderBottom:"1px solid var(--border)" }}>
-                    <div style={{ display:"flex", gap:12, alignItems:"center" }}>
-                      <img src={p.image} alt="" style={{ width:40, height:44, objectFit:"cover", borderRadius:6 }} />
-                      <span style={{ fontSize:14, fontWeight:600 }}>{p.name}</span>
-                    </div>
-                    <span className={`admin-qty-badge ${p.qty === 0 ? "qty-out" : p.qty < 5 ? "qty-low" : "qty-ok"}`}>
-                      {p.qty === 0 ? "Out of Stock" : p.qty < 5 ? `⚠ ${p.qty} left` : `✓ ${p.qty}`}
-                    </span>
+            <div className="admin-card">
+              <div className="admin-card-title">📋 Complete System Logs Registry</div>
+              <div className="notify-log" style={{ maxHeight: "400px" }}>
+                {[...notifyLog].reverse().map((log, idx) => (
+                  <div className="notify-item" key={idx}>
+                    <span className="notify-time">{log.time}</span>
+                    <span>{log.msg}</span>
                   </div>
                 ))}
               </div>
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        )}
+      </main>
     </div>
   );
 }
