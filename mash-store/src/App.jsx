@@ -676,10 +676,10 @@ export default function App() {
     return () => clearInterval(interval);
   }, [sale, toast]);
 
-  // Simulated stock-check job (runs at mount to demo; in real app: cron at 9AM & 6PM IST)
+  // Simulated stock-check job (runs at mount to demo; in real app: cron at 8:30 AM & 5:00 PM IST)
   useEffect(() => {
     const runStockCheck = () => {
-      const low = products.filter(p => p.qty < 5 && p.qty > 0);
+      const low = products.filter(p => p.qty <= 5 && p.qty > 0);
       const out = products.filter(p => p.qty === 0);
       const now = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
       let msgs = [];
@@ -703,16 +703,35 @@ export default function App() {
     };
     runStockCheck();
     
-    const msTo9AM = (() => {
+    let timerId;
+    const scheduleNextCheck = () => {
       const now = new Date();
-      const target = new Date(now);
-      target.setHours(9, 0, 0, 0);
-      if (target <= now) target.setDate(target.getDate() + 1);
-      return target - now;
-    })();
-    const t1 = setTimeout(() => { runStockCheck(); setInterval(runStockCheck, 86400000); }, msTo9AM);
-    return () => clearTimeout(t1);
-  }, []);
+      
+      const t830 = new Date(now);
+      t830.setHours(8, 30, 0, 0);
+      
+      const t1700 = new Date(now);
+      t1700.setHours(17, 0, 0, 0);
+      
+      let nextTarget;
+      if (now < t830) {
+        nextTarget = t830;
+      } else if (now < t1700) {
+        nextTarget = t1700;
+      } else {
+        nextTarget = new Date(t830);
+        nextTarget.setDate(nextTarget.getDate() + 1);
+      }
+      
+      const msUntil = nextTarget - now;
+      timerId = setTimeout(() => {
+        runStockCheck();
+        scheduleNextCheck();
+      }, msUntil);
+    };
+    scheduleNextCheck();
+    return () => clearTimeout(timerId);
+  }, [products]);
 
   const cartCount = cart.length;
   const wishCount = wishlist.length;
@@ -1286,7 +1305,8 @@ function AdminPortal({ products, setProducts, sale, setSale, notifyLog, setNotif
 
   if (!authed) {
     const handleLoginSubmit = () => {
-      if (adminPass === "mash@admin") {
+      const expectedPass = import.meta.env.VITE_ADMIN_PASSWORD || "mash@admin";
+      if (adminPass === expectedPass) {
         setAuthed(true);
         sessionStorage.setItem("admin_authed", "true");
         toast("🔓 Admin Portal Access Granted");
@@ -1321,9 +1341,6 @@ function AdminPortal({ products, setProducts, sale, setSale, notifyLog, setNotif
           >
             ENTER SYSTEM
           </button>
-          <p style={{ marginTop: "24px", fontSize: "12px", color: "#6b6258" }}>
-            Demo Key: <strong style={{ color: "#9e9288" }}>mash@admin</strong>
-          </p>
         </div>
       </div>
     );
@@ -1509,7 +1526,7 @@ function AdminPortal({ products, setProducts, sale, setSale, notifyLog, setNotif
   };
 
   const runManualCheck = () => {
-    const low = products.filter(p => p.qty < 5 && p.qty > 0);
+    const low = products.filter(p => p.qty <= 5 && p.qty > 0);
     const out = products.filter(p => p.qty === 0);
     const now = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
     let msg = low.length ? `Low stock: ${low.map(p => p.name + " (qty:" + p.qty + ")").join(", ")}` : "";
@@ -1520,7 +1537,8 @@ function AdminPortal({ products, setProducts, sale, setSale, notifyLog, setNotif
       localStorage.setItem("mash_notify_log", JSON.stringify(next));
       return next;
     });
-    toast("📧 Stock check run — email sent to swarnapriya.kr@gmail.com");
+    const emailTo = import.meta.env.VITE_ALERT_EMAIL || "admin@example.com";
+    toast(`📧 Stock check run — email sent to ${emailTo}`);
   };
 
   const handleLogout = () => {
@@ -1561,7 +1579,7 @@ function AdminPortal({ products, setProducts, sale, setSale, notifyLog, setNotif
           </ul>
         </div>
         <div className="admin-sidebar-footer">
-          <button className="admin-sidebar-btn" onClick={() => window.open(isLocal ? "http://localhost:5173" : "https://mashstore.in", "_blank")} style={{ border: "1px solid var(--border)" }}>
+          <button className="admin-sidebar-btn" onClick={() => { window.location.href = isLocal ? window.location.origin : "https://mashstore.in"; }} style={{ border: "1px solid var(--border)" }}>
             🌐 Live Storefront ↗
           </button>
           <button className="admin-sidebar-btn" onClick={() => setDark(d => !d)} style={{ border: "1px solid var(--border)" }}>
@@ -2009,14 +2027,14 @@ function AdminPortal({ products, setProducts, sale, setSale, notifyLog, setNotif
                 <Icon.Bell /> Stock Automated Alert Configurations
               </div>
               <p style={{ fontSize: 14, color: "var(--text2)", marginBottom: 16, lineHeight: 1.6 }}>
-                Automatic stock check emails are run periodically twice daily at <strong>9:00 AM IST</strong> and <strong>6:00 PM IST</strong>. Any product dropping below 5 units automatically reports an alert to the console and generates logs.
+                Automatic stock check emails are run periodically twice daily at <strong>8:30 AM IST</strong> and <strong>5:00 PM IST</strong>. Any product dropping below 5 units automatically reports an alert to the console and generates logs.
               </p>
               <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                 <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "10px 16px", fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}>
-                  <span>📧</span> swarnapriya.kr@gmail.com
+                  <span>📧</span> {import.meta.env.VITE_ALERT_EMAIL || "admin@example.com"}
                 </div>
                 <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "10px 16px", fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}>
-                  <span>⏰</span> 9:00 AM & 6:00 PM IST
+                  <span>⏰</span> 8:30 AM & 5:00 PM IST
                 </div>
                 <button className="admin-action-btn" onClick={runManualCheck}>▶ Execute Manual Stock Check Now</button>
               </div>
