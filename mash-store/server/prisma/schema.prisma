@@ -1,0 +1,26 @@
+// This is your Prisma schema file.
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Neon requires connection pooling in serverless environments.
+  // For a Node.js server (non-serverless) the direct URL is fine.
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  basePrice   Int
+  qty         Int      @default(0)
+  fit         String   @default("Regular")
+  image       String
+  tags        String[] @default([])
+  description String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

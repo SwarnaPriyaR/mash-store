@@ -22,6 +22,9 @@ const INITIAL_PRODUCTS = [
     reviews: [{ user:"Aarav S.", rating:5, text:"Edgy without being try-hard. Perfect weight for Chennai weather too." }] },
 ];
 
+// ── API base URL (module-level so all components can use it) ─────────────────
+const API_BASE = "http://localhost:3001/api";
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const getSalePrice = (product, sale) => {
   if (!sale || !sale.active) return null;
@@ -501,21 +504,34 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [showCheckout, setShowCheckout] = useState(false);
 
-  // Products with basePrice for sale calculations (initialized from localStorage)
-  const [products, setProducts] = useState(() => {
-    const saved = localStorage.getItem("mash_products");
-    if (saved) {
+  // Products — loaded from Neon PostgreSQL via Express API
+  const [products, setProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [productsError, setProductsError] = useState(null);
+
+  // Fetch products from the backend on mount
+  useEffect(() => {
+    const fetchProducts = async () => {
       try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return parsed.map(p => ({ ...p, image: convertDriveUrl(p.image) }));
-        }
-      } catch (e) {
-        console.error("Failed to load products from localStorage", e);
+        setProductsLoading(true);
+        setProductsError(null);
+        const res = await fetch(`${API_BASE}/products`);
+        if (!res.ok) throw new Error(`Server error ${res.status}`);
+        const data = await res.json();
+        // Normalize: add runtime `price` field (= basePrice, adjusted by sale later)
+        setProducts(data.map(p => ({ ...p, price: p.basePrice, image: convertDriveUrl(p.image), reviews: p.reviews || [] })));
+      } catch (err) {
+        console.error("Failed to load products from API:", err);
+        setProductsError("Could not connect to MASH Store API. Make sure the server is running on port 3001.");
+        // Fallback to initial data so storefront still works
+        setProducts(INITIAL_PRODUCTS.map(p => ({ ...p, basePrice: p.price, image: convertDriveUrl(p.image) })));
+      } finally {
+        setProductsLoading(false);
       }
-    }
-    return INITIAL_PRODUCTS.map(p => ({ ...p, basePrice: p.price, image: convertDriveUrl(p.image) }));
-  });
+    };
+    fetchProducts();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Sale state (initialized from localStorage)
   const [sale, setSale] = useState(() => {
@@ -572,10 +588,9 @@ export default function App() {
     document.documentElement.className = dark ? "dark" : "";
   }, [dark]);
 
-  // Sync state changes to localStorage
-  useEffect(() => {
-    localStorage.setItem("mash_products", JSON.stringify(products));
-  }, [products]);
+  // NOTE: Products are now persisted in Neon PostgreSQL via the API.
+  // Individual write operations (add/update/delete) call the API directly.
+  // No localStorage sync needed for products.
 
   useEffect(() => {
     localStorage.setItem("mash_sale", JSON.stringify(sale));
@@ -585,17 +600,10 @@ export default function App() {
     localStorage.setItem("mash_notify_log", JSON.stringify(notifyLog));
   }, [notifyLog]);
 
-  // Tab synchronization storage listener
+  // Tab synchronization storage listener (sale & notifications still use localStorage)
   useEffect(() => {
     const handleStorage = (e) => {
-      if (e.key === "mash_products") {
-        try {
-          const val = JSON.parse(e.newValue);
-          if (Array.isArray(val)) {
-            setProducts(val.map(p => ({ ...p, image: convertDriveUrl(p.image) })));
-          }
-        } catch (err) { console.error(err); }
-      }
+      // Products are now in DB — no localStorage sync needed for products
       if (e.key === "mash_sale") {
         try {
           const val = JSON.parse(e.newValue);
@@ -1330,84 +1338,144 @@ function AdminPortal({ products, setProducts, sale, setSale, notifyLog, setNotif
   const isSaleActive = sale.active && Date.now() >= sale.start && Date.now() <= sale.end;
   const isSaleScheduled = !isSaleActive && sale.startTime && Date.now() < sale.startTime;
 
-  const updateProduct = (id, field, value) => {
-    setProducts(prev => {
-      const updated = prev.map(p => {
-        if (p.id !== id) return p;
-        const updatedObj = {
-          ...p,
-          [field]: field === "qty" ? Math.max(0, parseInt(value) || 0) :
-                   field === "basePrice" ? parseFloat(value) || p.basePrice : value
-        };
-        if (field === "basePrice") {
-          updatedObj.price = isSaleActive ? Math.round(updatedObj.basePrice * (1 - sale.discount / 100)) : updatedObj.basePrice;
-        }
-        return updatedObj;
+  // ── API helpers ─────────────────────────────────────────────────────────────
+
+  // Re-fetch products from Neon and refresh local state
+  const refreshProducts = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/products`);
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      const data = await res.json();
+      setProducts(data.map(p => ({
+        ...p,
+        price: isSaleActive ? Math.round(p.basePrice * (1 - sale.discount / 100)) : p.basePrice,
+        image: convertDriveUrl(p.image),
+        reviews: p.reviews || []
+      })));
+    } catch (err) {
+      console.error("Failed to refresh products:", err);
+    }
+  }, [isSaleActive, sale.discount]);
+
+  // PATCH — update a single field (qty, basePrice, or fit) for a product
+  const updateProduct = useCallback(async (id, field, value) => {
+    // Optimistic UI update first
+    setProducts(prev => prev.map(p => {
+      if (p.id !== id) return p;
+      const next = { ...p };
+      if (field === "qty") next.qty = Math.max(0, parseInt(value) || 0);
+      else if (field === "basePrice") {
+        next.basePrice = parseInt(value) || p.basePrice;
+        next.price = isSaleActive ? Math.round(next.basePrice * (1 - sale.discount / 100)) : next.basePrice;
+      } else {
+        next[field] = value;
+      }
+      return next;
+    }));
+
+    try {
+      // Map field name: "basePrice" in UI → send as basePrice to API
+      const body = {};
+      if (field === "qty") body.qty = parseInt(value);
+      else if (field === "basePrice") body.basePrice = parseInt(value);
+      else body[field] = value;
+
+      const res = await fetch(`${API_BASE}/products/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
       });
-      localStorage.setItem("mash_products", JSON.stringify(updated));
-      return updated;
-    });
-  };
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || `Server error ${res.status}`);
+      }
+    } catch (err) {
+      console.error(`Failed to update product ${id}:`, err);
+      toast(`❌ Failed to save: ${err.message}`);
+      // Revert by re-fetching
+      await refreshProducts();
+    }
+  }, [isSaleActive, sale.discount, refreshProducts, toast]);
 
-  const removeProduct = (id) => {
-    const updated = products.filter(p => p.id !== id);
-    setProducts(updated);
-    localStorage.setItem("mash_products", JSON.stringify(updated));
-    toast("Product removed from inventory");
-  };
+  // DELETE — remove a product permanently from Neon
+  const removeProduct = useCallback(async (id) => {
+    const product = products.find(p => p.id === id);
+    // Optimistic remove
+    setProducts(prev => prev.filter(p => p.id !== id));
+    try {
+      const res = await fetch(`${API_BASE}/products/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || `Server error ${res.status}`);
+      }
+      toast("🗑 Product removed from inventory");
+      const nowStr = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+      setNotifyLog(prev => {
+        const next = [...prev, { time: nowStr, msg: `Deleted product "${product?.name || id}" from inventory` }];
+        localStorage.setItem("mash_notify_log", JSON.stringify(next));
+        return next;
+      });
+    } catch (err) {
+      console.error(`Failed to delete product ${id}:`, err);
+      toast(`❌ Delete failed: ${err.message}`);
+      await refreshProducts();
+    }
+  }, [products, refreshProducts, toast]);
 
-  const handleAddProduct = (e) => {
+  // POST — add a new product to Neon
+  const handleAddProduct = useCallback(async (e) => {
     e.preventDefault();
     if (!newProd.name.trim()) { toast("Product name is required"); return; }
-    const baseP = parseFloat(newProd.price);
+    const baseP = parseInt(newProd.price);
     if (isNaN(baseP) || baseP <= 0) { toast("Base price must be a valid positive number"); return; }
     const quantity = parseInt(newProd.qty);
     if (isNaN(quantity) || quantity < 0) { toast("Quantity must be a valid non-negative integer"); return; }
 
-    const nextId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
-    const finalPrice = isSaleActive ? Math.round(baseP * (1 - sale.discount / 100)) : baseP;
-
-    const productToAdd = {
-      id: nextId,
+    const payload = {
       name: newProd.name.trim(),
       basePrice: baseP,
-      price: finalPrice,
       qty: quantity,
       fit: newProd.fit,
       image: convertDriveUrl(newProd.image.trim()) || templates[0],
       tags: newProd.tags.split(",").map(t => t.trim()).filter(Boolean),
       description: newProd.description.trim() || "Premium quality T-shirt from MASH Store.",
-      reviews: []
     };
 
-    const updated = [...products, productToAdd];
-    setProducts(updated);
-    localStorage.setItem("mash_products", JSON.stringify(updated));
+    try {
+      const res = await fetch(`${API_BASE}/products`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || `Server error ${res.status}`);
+      }
+      const created = await res.json();
 
-    // Reset Form
-    setNewProd({
-      name: "",
-      price: "",
-      qty: "",
-      fit: "Regular",
-      image: "",
-      tags: "Graphic, Unisex",
-      description: "Premium heavy cotton streetwear tee."
-    });
-    setSelectedImgTemplate("");
-    setExpandAddForm(false);
+      // Add to local state immediately (with price field)
+      const finalPrice = isSaleActive ? Math.round(created.basePrice * (1 - sale.discount / 100)) : created.basePrice;
+      setProducts(prev => [...prev, { ...created, price: finalPrice, image: convertDriveUrl(created.image), reviews: [] }]);
 
-    // Update Logs
-    const nowStr = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
-    const logMsg = `Added new product "${productToAdd.name}" to inventory (Qty: ${productToAdd.qty})`;
-    setNotifyLog(prev => {
-      const next = [...prev, { time: nowStr, msg: logMsg }];
-      localStorage.setItem("mash_notify_log", JSON.stringify(next));
-      return next;
-    });
+      // Reset form
+      setNewProd({ name: "", price: "", qty: "", fit: "Regular", image: "", tags: "Graphic, Unisex", description: "Premium heavy cotton streetwear tee." });
+      setSelectedImgTemplate("");
+      setExpandAddForm(false);
 
-    toast(`🎉 "${productToAdd.name}" added successfully!`);
-  };
+      // Log entry
+      const nowStr = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+      setNotifyLog(prev => {
+        const next = [...prev, { time: nowStr, msg: `Added new product "${created.name}" to inventory (ID: ${created.id}, Qty: ${created.qty})` }];
+        localStorage.setItem("mash_notify_log", JSON.stringify(next));
+        return next;
+      });
+
+      toast(`🎉 "${created.name}" saved to Neon DB!`);
+    } catch (err) {
+      console.error("Failed to add product:", err);
+      toast(`❌ Could not add product: ${err.message}`);
+    }
+  }, [newProd, isSaleActive, sale.discount, templates, toast]);
 
   const handleSetSale = (e) => {
     e.preventDefault();
@@ -1546,6 +1614,21 @@ function AdminPortal({ products, setProducts, sale, setSale, notifyLog, setNotif
               </div>
             </div>
 
+            {/* Neon DB connection status */}
+            <div style={{ marginBottom: 16 }}>
+              {products.length > 0 ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#dcfce7", border: "1px solid #86efac", borderRadius: "var(--radius-sm)", padding: "10px 16px", fontSize: 13, color: "#166534" }}>
+                  <span>🟢</span>
+                  <span><strong>Neon PostgreSQL:</strong> Connected — {products.length} product{products.length !== 1 ? "s" : ""} loaded from database</span>
+                </div>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: "var(--radius-sm)", padding: "10px 16px", fontSize: 13, color: "#991b1b" }}>
+                  <span>🔴</span>
+                  <span><strong>Neon PostgreSQL:</strong> No data — make sure the Express server is running on port 3001</span>
+                </div>
+              )}
+            </div>
+
             {lowStock.length > 0 && (
               <div className="alert-banner">
                 <span className="alert-icon">⚠️</span>
@@ -1575,11 +1658,18 @@ function AdminPortal({ products, setProducts, sale, setSale, notifyLog, setNotif
             <header className="admin-page-header">
               <div className="admin-page-title-group">
                 <h1 className="admin-title">INVENTORY MANAGER</h1>
-                <p className="admin-sub">Insert new products and adjust stock parameters</p>
+                <p className="admin-sub">Insert new products and adjust stock parameters — backed by Neon PostgreSQL</p>
               </div>
             </header>
 
-            {/* EXPANDABLE ADD PRODUCT FORM */}
+            {/* DB loading / error state */}
+            {products.length === 0 && (
+              <div style={{ background: "#fef3c7", border: "1px solid #fbbf24", borderRadius: "var(--radius-sm)", padding: "14px 18px", marginBottom: 20, fontSize: 13, color: "#92400e", display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 18 }}>⚠️</span>
+                <span><strong>No products loaded.</strong> Ensure the Express API server is running: <code style={{ background: "rgba(0,0,0,0.08)", padding: "1px 6px", borderRadius: 4 }}>cd mash-store/server && npm run dev</code></span>
+              </div>
+            )}
+
             <div
               className="admin-form-header"
               onClick={() => setExpandAddForm(!expandAddForm)}
