@@ -11,12 +11,12 @@
     "db:studio": "npx prisma studio"
   },
   "dependencies": {
-    "@prisma/client": "^7.0.0",
+    "@prisma/client": "^6.4.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2"
   },
   "devDependencies": {
-    "prisma": "^7.0.0"
+    "prisma": "^6.4.0"
   }
 }
