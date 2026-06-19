@@ -1,14 +1,12 @@
 /**
  * prisma.config.ts — Prisma 7 configuration file.
- * The Prisma CLI (db push, migrate, studio) reads this file via jiti (no TS compile needed).
- *
+ * Prisma CLI reads this via jiti (no TS compilation needed).
  * Docs: https://pris.ly/d/config-datasource
  */
-import { defineConfig } from "prisma/config";
-import { config } from "dotenv";
 
-// Explicitly load .env so DATABASE_URL is available to Prisma CLI
-config();
+// Side-effect import: loads .env into process.env immediately
+import "dotenv/config";
+import { defineConfig } from "prisma/config";
 
 export default defineConfig({
   schema: "./prisma/schema.prisma",
