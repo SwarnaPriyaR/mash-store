@@ -812,11 +812,7 @@ export default function App() {
               <button className="auth-btn primary" onClick={() => setAuthModal("signup")}>Sign up</button>
             </>
           )}
-          {isLocal && (
-            <button className="admin-btn" onClick={() => window.open("#/admin", "_blank")} title="Admin Portal">
-              <Icon.Shield /> Admin Portal
-            </button>
-          )}
+
           <button className="icon-btn" onClick={() => nav("wishlist")} title="Wishlist">
             <Icon.Heart filled={wishCount > 0} />
             {wishCount > 0 && <span className="badge">{wishCount}</span>}
