@@ -16,7 +16,10 @@ const cors = require("cors");
 const { PrismaClient } = require("@prisma/client");
 
 const app = express();
-const prisma = new PrismaClient();
+// Prisma 7: datasourceUrl must be passed to the constructor (no longer read from schema.prisma)
+const prisma = new PrismaClient({
+  datasourceUrl: process.env.DATABASE_URL,
+});
 const PORT = process.env.PORT || 3001;
 
 // ── Middleware ────────────────────────────────────────────────────────────────

@@ -1,15 +1,14 @@
 // This is your Prisma schema file.
 // Learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Prisma 7: datasource url is configured via prisma.config.ts (CLI) and
+// PrismaClient({ datasourceUrl }) (runtime). Do NOT add url here.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  // Neon requires connection pooling in serverless environments.
-  // For a Node.js server (non-serverless) the direct URL is fine.
+  provider = "postgresql"
 }
 
 model Product {
