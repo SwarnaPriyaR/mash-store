@@ -41,3 +41,14 @@ export function useCountdown(endTime) {
   const s = Math.floor((remaining % 60_000) / 1_000);
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
+
+export function useHash() {
+  const [hash, setHash] = useState(window.location.hash);
+  useEffect(() => {
+    const handleHash = () => setHash(window.location.hash);
+    window.addEventListener("hashchange", handleHash);
+    return () => window.removeEventListener("hashchange", handleHash);
+  }, []);
+  return hash;
+}
+
