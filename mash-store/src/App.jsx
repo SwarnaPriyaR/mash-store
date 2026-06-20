@@ -1579,7 +1579,13 @@ function AdminPortal({ products, setProducts, sale, setSale, notifyLog, setNotif
           </ul>
         </div>
         <div className="admin-sidebar-footer">
-          <button className="admin-sidebar-btn" onClick={() => { window.location.href = isLocal ? window.location.origin : "https://mashstore.in"; }} style={{ border: "1px solid var(--border)" }}>
+          <button className="admin-sidebar-btn" onClick={() => {
+            if (isLocal) {
+              window.location.hash = "#/";
+            } else {
+              window.location.href = "https://mashstore.in";
+            }
+          }} style={{ border: "1px solid var(--border)" }}>
             🌐 Live Storefront ↗
           </button>
           <button className="admin-sidebar-btn" onClick={() => setDark(d => !d)} style={{ border: "1px solid var(--border)" }}>
