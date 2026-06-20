@@ -2,7 +2,14 @@ import React, { useState, useCallback, useEffect } from "react";
 import { Icon } from "./Icon";
 import { convertDriveUrl } from "../utils/helpers";
 
-const API_BASE = import.meta.env.VITE_API_BASE;
+const getApiBase = () => {
+  const host = import.meta.env.API_HOST || window.location.hostname;
+  const port = import.meta.env.API_PORT;
+  const protocol = window.location.protocol;
+  if (!port) return `${protocol}//${host}/api`;
+  return `${protocol}//${host}:${port}/api`;
+};
+const API_BASE = getApiBase();
 
 export function AdminPortal({
   products,
@@ -193,9 +200,9 @@ export function AdminPortal({
 
   if (!authed) {
     const handleLoginSubmit = () => {
-      const expectedPass = import.meta.env.VITE_ADMIN_PASSWORD;
+      const expectedPass = import.meta.env.ADMIN_PASSWORD;
       if (!expectedPass) {
-        toast("⚠️ Configuration error: VITE_ADMIN_PASSWORD environment variable is not set.");
+        toast("⚠️ Configuration error: ADMIN_PASSWORD environment variable is not set.");
         return;
       }
       if (adminPass === expectedPass) {
@@ -285,9 +292,9 @@ export function AdminPortal({
       localStorage.setItem("mash_notify_log", JSON.stringify(next));
       return next;
     });
-    const emailTo = import.meta.env.VITE_ALERT_EMAIL;
+    const emailTo = import.meta.env.ALERT_EMAIL;
     if (!emailTo) {
-      toast("❌ Configuration error: VITE_ALERT_EMAIL environment variable is not set.");
+      toast("❌ Configuration error: ALERT_EMAIL environment variable is not set.");
       return;
     }
     toast(`📧 Stock check run — email sent to ${emailTo}`);
@@ -783,7 +790,7 @@ export function AdminPortal({
               </p>
               <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                 <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "10px 16px", fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}>
-                  <span>📧</span> {import.meta.env.VITE_ALERT_EMAIL || "(Not Configured)"}
+                  <span>📧</span> {import.meta.env.ALERT_EMAIL || "(Not Configured)"}
                 </div>
                 <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "10px 16px", fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}>
                   <span>⏰</span> 8:30 AM & 5:00 PM IST

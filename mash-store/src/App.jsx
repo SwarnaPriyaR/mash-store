@@ -6,7 +6,14 @@ import { AdminPortal } from "./components/AdminPortal";
 import { getSalePrice, convertDriveUrl, sendEmailNotification } from "./utils/helpers";
 import { useToast, useCountdown, useHash } from "./useHooks";
 
-const API_BASE = import.meta.env.VITE_API_BASE;
+const getApiBase = () => {
+  const host = import.meta.env.API_HOST || window.location.hostname;
+  const port = import.meta.env.API_PORT;
+  const protocol = window.location.protocol;
+  if (!port) return `${protocol}//${host}/api`;
+  return `${protocol}//${host}:${port}/api`;
+};
+const API_BASE = getApiBase();
 
 export default function App() {
   const [dark, setDark] = useState(false);
