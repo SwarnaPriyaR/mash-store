@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Icon } from "./Icon";
 import { convertDriveUrl } from "../utils/helpers";
 
@@ -117,6 +117,12 @@ export function AdminPortal({
       console.error("Failed to refresh products:", err);
     }
   }, [isSaleActive, sale.discount, setProducts]);
+
+  useEffect(() => {
+    if (authed) {
+      refreshProducts();
+    }
+  }, [authed, refreshProducts]);
 
   const updateProduct = useCallback(async (id, field, value) => {
     setProducts(prev => prev.map(p => {
