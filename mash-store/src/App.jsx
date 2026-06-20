@@ -1305,7 +1305,7 @@ function AdminPortal({ products, setProducts, sale, setSale, notifyLog, setNotif
 
   if (!authed) {
     const handleLoginSubmit = () => {
-      const expectedPass = import.meta.env.VITE_ADMIN_PASSWORD || "mash@admin";
+      const expectedPass = import.meta.env.ADMIN_PASSWORD;
       if (adminPass === expectedPass) {
         setAuthed(true);
         sessionStorage.setItem("admin_authed", "true");
