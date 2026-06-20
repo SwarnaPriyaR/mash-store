@@ -6,8 +6,8 @@ const prisma = new PrismaClient();
 
 // Setup nodemailer transporter using environment variables
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: parseInt(process.env.SMTP_PORT || "587"),
+  host: process.env.SMTP_HOST,
+  port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : undefined,
   secure: process.env.SMTP_PORT === "465",
   auth: {
     user: process.env.SMTP_USER,
@@ -30,9 +30,9 @@ async function checkStockAndSendEmail() {
       return;
     }
 
-    const emailTo = process.env.SMTP_TO || "admin@example.com";
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      console.warn("[Cron] Mail configuration missing in .env. Skipping email send.");
+    const emailTo = process.env.SMTP_TO;
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS || !process.env.SMTP_HOST || !emailTo) {
+      console.warn("[Cron] Mail configuration (SMTP_USER, SMTP_PASS, SMTP_HOST, SMTP_TO) missing in .env. Skipping email send.");
       console.log("[Cron] Low stock products:", lowStockProducts.map(p => `${p.name} (qty: ${p.qty})`).join(", "));
       return;
     }

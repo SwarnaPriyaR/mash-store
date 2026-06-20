@@ -6,7 +6,7 @@ import { AdminPortal } from "./components/AdminPortal";
 import { getSalePrice, convertDriveUrl, sendEmailNotification } from "./utils/helpers";
 import { useToast, useCountdown, useHash } from "./useHooks";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3001/api";
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 export default function App() {
   const [dark, setDark] = useState(false);

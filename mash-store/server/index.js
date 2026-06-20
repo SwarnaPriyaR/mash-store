@@ -21,7 +21,11 @@ const swaggerJsdoc = require("swagger-jsdoc");
 
 const app = express();
 const prisma = new PrismaClient();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT;
+if (!PORT) {
+  console.error("❌ Critical configuration error: PORT environment variable is not defined in .env.");
+  process.exit(1);
+}
 
 // ── Swagger Configuration ──────────────────────────────────────────────────────
 const swaggerOptions = {
@@ -47,12 +51,13 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 
 // ── Middleware ────────────────────────────────────────────────────────────────
+const corsOrigins = process.env.CORS_ORIGINS;
+if (!corsOrigins) {
+  console.error("❌ Critical configuration error: CORS_ORIGINS environment variable is not defined in .env.");
+  process.exit(1);
+}
 app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:3000",
-  ],
+  origin: corsOrigins.split(",").map(o => o.trim()),
   methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
