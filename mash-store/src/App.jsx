@@ -3,7 +3,7 @@ import "./global.css";
 import { Icon } from "./components/Icon";
 import { AuthModal } from "./components/AuthModal";
 import { AdminPortal } from "./components/AdminPortal";
-import { getSalePrice, convertDriveUrl, sendEmailNotification } from "./utils/helpers";
+import { getSalePrice, convertDriveUrl } from "./utils/helpers";
 import { useToast, useCountdown, useHash } from "./useHooks";
 
 const getApiBase = () => {
@@ -68,37 +68,7 @@ export default function App() {
     return { active: false, discount: 0, start: 0, end: 0, startTime: null, durationHours: 0 };
   });
 
-  // Notification log (initialized from localStorage)
-  const [notifyLog, setNotifyLog] = useState(() => {
-    const saved = localStorage.getItem("mash_notify_log");
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error("Failed to load notifications from localStorage", e);
-      }
-    }
-    return [
-      { time: "09:00 AM", msg: "Stock check: All products above threshold." },
-    ];
-  });
-
   const { toasts, add: toast } = useToast();
-
-  const [emailEnabled, setEmailEnabled] = useState(() => {
-    return localStorage.getItem("mash_email_enabled") === "true";
-  });
-  const [web3FormsKey, setWeb3FormsKey] = useState(() => {
-    return localStorage.getItem("mash_web3forms_key") || "";
-  });
-
-  useEffect(() => {
-    localStorage.setItem("mash_email_enabled", emailEnabled);
-  }, [emailEnabled]);
-
-  useEffect(() => {
-    localStorage.setItem("mash_web3forms_key", web3FormsKey);
-  }, [web3FormsKey]);
 
   const currentHash = useHash();
   const hostname = window.location.hostname;
@@ -118,10 +88,6 @@ export default function App() {
     localStorage.setItem("mash_sale", JSON.stringify(sale));
   }, [sale]);
 
-  useEffect(() => {
-    localStorage.setItem("mash_notify_log", JSON.stringify(notifyLog));
-  }, [notifyLog]);
-
   // Tab synchronization storage listener (sale & notifications still use localStorage)
   useEffect(() => {
     const handleStorage = (e) => {
@@ -131,18 +97,6 @@ export default function App() {
           const val = JSON.parse(e.newValue);
           if (val) setSale(val);
         } catch (err) { console.error(err); }
-      }
-      if (e.key === "mash_notify_log") {
-        try {
-          const val = JSON.parse(e.newValue);
-          if (val) setNotifyLog(val);
-        } catch (err) { console.error(err); }
-      }
-      if (e.key === "mash_email_enabled") {
-        setEmailEnabled(e.newValue === "true");
-      }
-      if (e.key === "mash_web3forms_key") {
-        setWeb3FormsKey(e.newValue || "");
       }
     };
     window.addEventListener("storage", handleStorage);
@@ -198,62 +152,7 @@ export default function App() {
     return () => clearInterval(interval);
   }, [sale, toast]);
 
-  // Simulated stock-check job (runs at mount to demo; in real app: cron at 8:30 AM & 5:00 PM IST)
-  useEffect(() => {
-    const runStockCheck = () => {
-      const low = products.filter(p => p.qty <= 5 && p.qty > 0);
-      const out = products.filter(p => p.qty === 0);
-      const now = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
-      let msgs = [];
-      if (low.length) msgs.push(`Low stock: ${low.map(p => p.name + " (qty:" + p.qty + ")").join(", ")}`);
-      if (out.length) msgs.push(`Out of stock: ${out.map(p => p.name).join(", ")}`);
-      if (msgs.length === 0) msgs.push("All products above threshold.");
-      const msgText = msgs.join(" | ");
 
-      setNotifyLog(prev => {
-        const next = [...prev, { time: now, msg: msgText }];
-        localStorage.setItem("mash_notify_log", JSON.stringify(next));
-        return next;
-      });
-
-      // Send actual email if enabled in storage
-      const key = localStorage.getItem("mash_web3forms_key");
-      const enabled = localStorage.getItem("mash_email_enabled") === "true";
-      if (enabled && key && (low.length || out.length)) {
-        sendEmailNotification(key, msgs.join("\n"), toast);
-      }
-    };
-    runStockCheck();
-    
-    let timerId;
-    const scheduleNextCheck = () => {
-      const now = new Date();
-      
-      const t830 = new Date(now);
-      t830.setHours(8, 30, 0, 0);
-      
-      const t1700 = new Date(now);
-      t1700.setHours(17, 0, 0, 0);
-      
-      let nextTarget;
-      if (now < t830) {
-        nextTarget = t830;
-      } else if (now < t1700) {
-        nextTarget = t1700;
-      } else {
-        nextTarget = new Date(t830);
-        nextTarget.setDate(nextTarget.getDate() + 1);
-      }
-      
-      const msUntil = nextTarget - now;
-      timerId = setTimeout(() => {
-        runStockCheck();
-        scheduleNextCheck();
-      }, msUntil);
-    };
-    scheduleNextCheck();
-    return () => clearTimeout(timerId);
-  }, [products]);
 
   const cartCount = cart.length;
   const wishCount = wishlist.length;
@@ -311,15 +210,9 @@ export default function App() {
           setProducts={setProducts}
           sale={sale}
           setSale={setSale}
-          notifyLog={notifyLog}
-          setNotifyLog={setNotifyLog}
           toast={toast}
           dark={dark}
           setDark={setDark}
-          emailEnabled={emailEnabled}
-          setEmailEnabled={setEmailEnabled}
-          web3FormsKey={web3FormsKey}
-          setWeb3FormsKey={setWeb3FormsKey}
           nav={nav}
         />
         {/* TOASTS */}

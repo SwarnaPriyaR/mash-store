@@ -374,9 +374,6 @@ async function main() {
   try {
     await prisma.$connect();
     console.log("✅ Connected to Neon PostgreSQL via Prisma");
-    
-    // Start automated stock check cron jobs (8:30 AM & 5:00 PM IST)
-    require("./cron");
 
     app.listen(PORT, () => {
       console.log(`🚀 MASH Store API running on http://localhost:${PORT}`);

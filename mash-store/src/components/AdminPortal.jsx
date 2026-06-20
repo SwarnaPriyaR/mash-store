@@ -16,15 +16,9 @@ export function AdminPortal({
   setProducts,
   sale,
   setSale,
-  notifyLog,
-  setNotifyLog,
   toast,
   dark,
   setDark,
-  emailEnabled,
-  setEmailEnabled,
-  web3FormsKey,
-  setWeb3FormsKey,
   nav
 }) {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem("admin_authed") === "true");
@@ -134,18 +128,12 @@ export function AdminPortal({
         throw new Error(err.error || `Server error ${res.status}`);
       }
       toast("🗑 Product removed from inventory");
-      const nowStr = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
-      setNotifyLog(prev => {
-        const next = [...prev, { time: nowStr, msg: `Deleted product "${product?.name || id}" from inventory` }];
-        localStorage.setItem("mash_notify_log", JSON.stringify(next));
-        return next;
-      });
     } catch (err) {
       console.error(`Failed to delete product ${id}:`, err);
       toast(`❌ Delete failed: ${err.message}`);
       await refreshProducts();
     }
-  }, [products, refreshProducts, setProducts, setNotifyLog, toast]);
+  }, [products, refreshProducts, setProducts, toast]);
 
   const handleAddProduct = useCallback(async (e) => {
     e.preventDefault();
@@ -184,19 +172,12 @@ export function AdminPortal({
       setSelectedImgTemplate("");
       setExpandAddForm(false);
 
-      const nowStr = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
-      setNotifyLog(prev => {
-        const next = [...prev, { time: nowStr, msg: `Added new product "${created.name}" to inventory (ID: ${created.id}, Qty: ${created.qty})` }];
-        localStorage.setItem("mash_notify_log", JSON.stringify(next));
-        return next;
-      });
-
       toast(`🎉 "${created.name}" saved to Neon DB!`);
     } catch (err) {
       console.error("Failed to add product:", err);
       toast(`❌ Could not add product: ${err.message}`);
     }
-  }, [newProd, isSaleActive, sale.discount, templates, setProducts, setNotifyLog, toast]);
+  }, [newProd, isSaleActive, sale.discount, templates, setProducts, toast]);
 
   if (!authed) {
     const handleLoginSubmit = () => {
@@ -280,26 +261,6 @@ export function AdminPortal({
     toast("Offer cancelled. Prices restored.");
   };
 
-  const runManualCheck = () => {
-    const low = products.filter(p => p.qty <= 5 && p.qty > 0);
-    const out = products.filter(p => p.qty === 0);
-    const now = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
-    let msg = low.length ? `Low stock: ${low.map(p => p.name + " (qty:" + p.qty + ")").join(", ")}` : "";
-    if (out.length) msg += (msg ? " | " : "") + `Out of stock: ${out.map(p => p.name).join(", ")}`;
-    if (!msg) msg = "All products above threshold.";
-    setNotifyLog(prev => {
-      const next = [...prev, { time: now, msg }];
-      localStorage.setItem("mash_notify_log", JSON.stringify(next));
-      return next;
-    });
-    const emailTo = import.meta.env.ALERT_EMAIL;
-    if (!emailTo) {
-      toast("❌ Configuration error: ALERT_EMAIL environment variable is not set.");
-      return;
-    }
-    toast(`📧 Stock check run — email sent to ${emailTo}`);
-  };
-
   const handleLogout = () => {
     setAuthed(false);
     sessionStorage.removeItem("admin_authed");
@@ -328,11 +289,6 @@ export function AdminPortal({
             <li>
               <button className={`admin-sidebar-btn ${currentSection === "sale" ? "active" : ""}`} onClick={() => setCurrentSection("sale")}>
                 🏷️ Sale Controller
-              </button>
-            </li>
-            <li>
-              <button className={`admin-sidebar-btn ${currentSection === "notifications" ? "active" : ""}`} onClick={() => setCurrentSection("notifications")}>
-                🔔 System Logs
               </button>
             </li>
           </ul>
@@ -413,17 +369,6 @@ export function AdminPortal({
               </div>
             )}
 
-            <div className="admin-card" style={{ marginTop: "24px" }}>
-              <div className="admin-card-title">📋 Recent Logs Summary</div>
-              <div className="notify-log" style={{ minHeight: "150px" }}>
-                {[...notifyLog].reverse().slice(0, 5).map((log, i) => (
-                  <div className="notify-item" key={i}>
-                    <span className="notify-time">{log.time}</span>
-                    <span>{log.msg}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         )}
 
@@ -771,47 +716,7 @@ export function AdminPortal({
           </div>
         )}
 
-        {/* SECTION 4: NOTIFICATIONS LOG */}
-        {currentSection === "notifications" && (
-          <div>
-            <header className="admin-page-header">
-              <div className="admin-page-title-group">
-                <h1 className="admin-title">SYSTEM ALERTS & LOGS</h1>
-                <p className="admin-sub">Monitor automatic alerts and view diagnostic execution steps</p>
-              </div>
-            </header>
 
-            <div className="admin-card">
-              <div className="admin-card-title">
-                <Icon.Bell /> Stock Automated Alert Configurations
-              </div>
-              <p style={{ fontSize: 14, color: "var(--text2)", marginBottom: 16, lineHeight: 1.6 }}>
-                Automatic stock check emails are run periodically twice daily at <strong>8:30 AM IST</strong> and <strong>5:00 PM IST</strong>. Any product dropping below 5 units automatically reports an alert to the console and generates logs.
-              </p>
-              <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "10px 16px", fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}>
-                  <span>📧</span> {import.meta.env.ALERT_EMAIL || "(Not Configured)"}
-                </div>
-                <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "10px 16px", fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}>
-                  <span>⏰</span> 8:30 AM & 5:00 PM IST
-                </div>
-                <button className="admin-action-btn" onClick={runManualCheck}>▶ Execute Manual Stock Check Now</button>
-              </div>
-            </div>
-
-            <div className="admin-card">
-              <div className="admin-card-title">📋 Complete System Logs Registry</div>
-              <div className="notify-log" style={{ maxHeight: "400px" }}>
-                {[...notifyLog].reverse().map((log, idx) => (
-                  <div className="notify-item" key={idx}>
-                    <span className="notify-time">{log.time}</span>
-                    <span>{log.msg}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );
