@@ -30,7 +30,7 @@ export default function App() {
       try {
         setProductsLoading(true);
         setProductsError(null);
-        const res = await fetch(`${API_BASE}/products`);
+        const res = await fetch(`${API_BASE}/product/allProduct`);
         if (!res.ok) throw new Error(`Server error ${res.status}`);
         const data = await res.json();
         // Normalize: add runtime `price` field (= basePrice, adjusted by sale later)

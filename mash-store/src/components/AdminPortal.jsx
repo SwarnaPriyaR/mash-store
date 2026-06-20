@@ -104,7 +104,7 @@ export function AdminPortal({
 
   const refreshProducts = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/products`);
+      const res = await fetch(`${API_BASE}/product/allProduct`);
       if (!res.ok) throw new Error(`Server error ${res.status}`);
       const data = await res.json();
       setProducts(data.map(p => ({
@@ -138,7 +138,7 @@ export function AdminPortal({
       else if (field === "basePrice") body.basePrice = parseInt(value);
       else body[field] = value;
 
-      const res = await fetch(`${API_BASE}/products/${id}`, {
+      const res = await fetch(`${API_BASE}/product/updateProduct/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -158,7 +158,7 @@ export function AdminPortal({
     const product = products.find(p => p.id === id);
     setProducts(prev => prev.filter(p => p.id !== id));
     try {
-      const res = await fetch(`${API_BASE}/products/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API_BASE}/product/removeProduct/${id}`, { method: "DELETE" });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || `Server error ${res.status}`);
@@ -196,7 +196,7 @@ export function AdminPortal({
     };
 
     try {
-      const res = await fetch(`${API_BASE}/products`, {
+      const res = await fetch(`${API_BASE}/product/addNew`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
