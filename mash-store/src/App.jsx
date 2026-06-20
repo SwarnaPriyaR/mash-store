@@ -799,6 +799,7 @@ export default function App() {
           setEmailEnabled={setEmailEnabled}
           web3FormsKey={web3FormsKey}
           setWeb3FormsKey={setWeb3FormsKey}
+          nav={nav}
         />
         {/* TOASTS */}
         <div className="toast-wrap">{toasts.map(t => <div key={t.id} className="toast">{t.msg}</div>)}</div>
@@ -1268,7 +1269,7 @@ function CheckoutModal({ cart, grandTotal, onClose, onSuccess }) {
   );
 }
 
-function AdminPortal({ products, setProducts, sale, setSale, notifyLog, setNotifyLog, toast, dark, setDark, emailEnabled, setEmailEnabled, web3FormsKey, setWeb3FormsKey }) {
+function AdminPortal({ products, setProducts, sale, setSale, notifyLog, setNotifyLog, toast, dark, setDark, emailEnabled, setEmailEnabled, web3FormsKey, setWeb3FormsKey, nav }) {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem("admin_authed") === "true");
   const [adminPass, setAdminPass] = useState("");
   const [currentSection, setCurrentSection] = useState("dashboard");
@@ -1581,6 +1582,7 @@ function AdminPortal({ products, setProducts, sale, setSale, notifyLog, setNotif
         <div className="admin-sidebar-footer">
           <button className="admin-sidebar-btn" onClick={() => {
             window.location.hash = "#/";
+            nav("home");
           }} style={{ border: "1px solid var(--border)" }}>
             🌐 Live Storefront ↗
           </button>
