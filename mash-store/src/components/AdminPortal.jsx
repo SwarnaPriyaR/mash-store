@@ -54,53 +54,10 @@ export function AdminPortal({
     "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=600&q=80"
   ];
 
-  if (!authed) {
-    const handleLoginSubmit = () => {
-      const expectedPass = import.meta.env.VITE_ADMIN_PASSWORD || "mash@admin";
-      if (adminPass === expectedPass) {
-        setAuthed(true);
-        sessionStorage.setItem("admin_authed", "true");
-        toast("🔓 Admin Portal Access Granted");
-      } else {
-        toast("❌ Incorrect admin password");
-      }
-    };
-
-    return (
-      <div className="admin-login-container">
-        <div className="admin-login-card">
-          <div className="admin-login-logo">
-            <Icon.Shirt /> MASH
-          </div>
-          <h2 className="admin-login-title">Admin Management Portal</h2>
-          <div className="form-field" style={{ textAlign: "left" }}>
-            <label className="form-label" style={{ color: "#9e9288" }}>Password</label>
-            <input
-              className="form-input"
-              type="password"
-              placeholder="••••••••"
-              value={adminPass}
-              onChange={e => setAdminPass(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handleLoginSubmit()}
-              style={{ background: "#1e1b19", borderColor: "#3a3530", color: "#f0ebe3" }}
-            />
-          </div>
-          <button
-            className="modal-submit"
-            onClick={handleLoginSubmit}
-            style={{ marginTop: "12px", background: "var(--accent)" }}
-          >
-            ENTER SYSTEM
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const lowStock = products.filter(p => p.qty > 0 && p.qty <= 5);
-  const outStock = products.filter(p => p.qty === 0);
   const isSaleActive = sale.active && Date.now() >= sale.start && Date.now() <= sale.end;
   const isSaleScheduled = !isSaleActive && sale.startTime && Date.now() < sale.startTime;
+  const lowStock = products.filter(p => p.qty > 0 && p.qty <= 5);
+  const outStock = products.filter(p => p.qty === 0);
 
   const refreshProducts = useCallback(async () => {
     try {
@@ -233,6 +190,49 @@ export function AdminPortal({
       toast(`❌ Could not add product: ${err.message}`);
     }
   }, [newProd, isSaleActive, sale.discount, templates, setProducts, setNotifyLog, toast]);
+
+  if (!authed) {
+    const handleLoginSubmit = () => {
+      const expectedPass = import.meta.env.VITE_ADMIN_PASSWORD || "mash@admin";
+      if (adminPass === expectedPass) {
+        setAuthed(true);
+        sessionStorage.setItem("admin_authed", "true");
+        toast("🔓 Admin Portal Access Granted");
+      } else {
+        toast("❌ Incorrect admin password");
+      }
+    };
+
+    return (
+      <div className="admin-login-container">
+        <div className="admin-login-card">
+          <div className="admin-login-logo">
+            <Icon.Shirt /> MASH
+          </div>
+          <h2 className="admin-login-title">Admin Management Portal</h2>
+          <div className="form-field" style={{ textAlign: "left" }}>
+            <label className="form-label" style={{ color: "#9e9288" }}>Password</label>
+            <input
+              className="form-input"
+              type="password"
+              placeholder="••••••••"
+              value={adminPass}
+              onChange={e => setAdminPass(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleLoginSubmit()}
+              style={{ background: "#1e1b19", borderColor: "#3a3530", color: "#f0ebe3" }}
+            />
+          </div>
+          <button
+            className="modal-submit"
+            onClick={handleLoginSubmit}
+            style={{ marginTop: "12px", background: "var(--accent)" }}
+          >
+            ENTER SYSTEM
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handleSetSale = (e) => {
     e.preventDefault();
