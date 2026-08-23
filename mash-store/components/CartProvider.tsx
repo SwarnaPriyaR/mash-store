@@ -50,7 +50,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const setDark = useCallback((v: boolean) => {
     setDarkState(v);
-    document.documentElement.className = v ? "dark" : "";
+    document.documentElement.classList.toggle("dark", v);
   }, []);
 
   // Hydrate product cache

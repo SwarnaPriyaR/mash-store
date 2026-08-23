@@ -1,14 +1,12 @@
-/* app/globals.css
-   ─────────────────────────────────────────────────────────────────────────────
-   All CSS variables, resets, component classes and animations for MASH.
-   Fonts are loaded via next/font in app/layout.tsx — no @import needed here.
-   ───────────────────────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
 
 /* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 /* ── Design tokens ── */
 :root {
+  --font-dm-sans: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-bebas: 'Bebas Neue', sans-serif;
   --bg: #f5f0e8;
   --bg2: #ebe5d8;
   --surface: #ffffff;
