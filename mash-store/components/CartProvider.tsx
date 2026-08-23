@@ -94,12 +94,29 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   }, [toast]);
 
+  // Hydrate OAuth user session from /api/auth/me
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.authenticated && res.user) {
+          setLoggedIn(true);
+          setUser(res.user.name || res.user.email.split("@")[0]);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const handleLogin = useCallback((name: string) => {
     setLoggedIn(true); setUser(name); toast(`Welcome, ${name}!`);
   }, [toast]);
 
-  const handleLogout = useCallback(() => {
-    setLoggedIn(false); setUser(null); toast("Logged out");
+  const handleLogout = useCallback(async () => {
+    setLoggedIn(false); setUser(null);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {}
+    toast("Logged out successfully");
   }, [toast]);
 
   return (
