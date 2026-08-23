@@ -30,12 +30,21 @@ export function NavBar() {
   const isUpcomingSale = !isSaleActive && sale.startTime != null && Date.now() < Number(sale.startTime);
   const hasBanner = isSaleActive || isUpcomingSale;
 
+  const isKidsPage = pathname === "/kids";
+
   return (
     <>
       {isSaleActive && <SaleBanner sale={sale} type="active" />}
       {isUpcomingSale && <SaleBanner sale={sale} type="upcoming" />}
 
-      <nav className="nav" style={{ top: hasBanner ? 40 : 0 }}>
+      <nav
+        className="nav"
+        style={{
+          top: hasBanner ? 40 : 0,
+          background: isKidsPage ? "#fcc3c3" : undefined,
+          borderBottom: isKidsPage ? "2px solid #f6a2a2" : undefined,
+        }}
+      >
         <Link href="/" className="nav-logo" style={{ display: "flex", alignItems: "center" }}>
           <img
             src={dark ? "/asset/logoDark.png" : "/asset/logoLight.png"}

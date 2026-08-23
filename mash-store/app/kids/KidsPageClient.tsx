@@ -44,76 +44,65 @@ export function KidsPageClient({ initialProducts }: Props) {
       style={{
         background: "#ffdbdb",
         minHeight: "100vh",
-        paddingTop: 80,
+        paddingTop: 88,
         paddingBottom: 64,
-        fontFamily: "'DM Sans', sans-serif",
+        fontFamily: "'Quicksand', 'Nunito', 'DM Sans', sans-serif",
       }}
     >
-      {/* HOPSCOTCH-STYLE STICKY/TOP FILTER HEADER BAR (#fcc3c3) */}
-      <div
-        style={{
-          background: "#fcc3c3",
-          borderBottom: "2px solid #f6a2a2",
-          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.05)",
-          padding: "20px 24px",
-          marginBottom: 32,
-        }}
-      >
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
+        {/* FLOATING HOPSCOTCH-STYLE HEADING & FLOATING FILTERS (NO BOX CONTAINER) */}
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
             <div>
               <h1
                 style={{
                   fontFamily: "var(--font-bebas), 'Bebas Neue', sans-serif",
-                  fontSize: 36,
+                  fontSize: 42,
                   color: "#1a1714",
                   margin: 0,
                   letterSpacing: "0.04em",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
                 }}
               >
                 MASH KIDS STORE
               </h1>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#4a3c3c" }}>
-                Showing {filtered.length} adorable styles for ages 2 to 9
-              </span>
+              <p style={{ margin: "4px 0 0 0", color: "#4a3c3c", fontSize: 14, fontWeight: 600 }}>
+                Showing {filtered.length} styles for ages 2 to 9 Years
+              </p>
             </div>
 
-            <div style={{ fontSize: 13, fontWeight: 700, background: "#ffffff", padding: "6px 14px", borderRadius: 99, color: "#1a1714", boxShadow: "0 2px 6px rgba(0,0,0,0.06)" }}>
-              🚚 Free Shipping above ₹999
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                background: "#fcc3c3",
+                color: "#1a1714",
+                padding: "8px 16px",
+                borderRadius: 99,
+                border: "1.5px solid #f6a2a2",
+              }}
+            >
+              🚚 Free Shipping on orders above ₹999
             </div>
           </div>
 
-          {/* HOPSCOTCH FILTERS BAR: AGE / SIZE, GENDER, CATEGORY */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 14,
-              background: "#ffffff",
-              borderRadius: 16,
-              padding: "16px 20px",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.04)",
-              border: "1.5px solid #f6a2a2",
-            }}
-          >
-            {/* 1. FILTER BY AGE / SIZE */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: "#1a1714", minWidth: 100, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          {/* FLOATING FILTERS DIRECTLY IN BODY */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {/* AGE / SIZE FILTER */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#1a1714", minWidth: 90, textTransform: "uppercase" }}>
                 Age / Size:
               </span>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {ageGroups.map((age) => (
                   <button
                     key={age}
+                    type="button"
                     onClick={() => setSelectedAge(age)}
                     style={{
-                      padding: "6px 14px",
+                      padding: "6px 16px",
                       borderRadius: 99,
-                      border: selectedAge === age ? "2px solid #1a1714" : "1.5px solid #e2e8f0",
-                      background: selectedAge === age ? "#1a1714" : "#ffdbdb",
+                      border: selectedAge === age ? "2px solid #1a1714" : "1.5px solid #f6a2a2",
+                      background: selectedAge === age ? "#1a1714" : "#fcc3c3",
                       color: selectedAge === age ? "#ffffff" : "#1a1714",
                       fontSize: 13,
                       fontWeight: 700,
@@ -127,20 +116,21 @@ export function KidsPageClient({ initialProducts }: Props) {
               </div>
             </div>
 
-            {/* 2. FILTER BY GENDER */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: "#1a1714", minWidth: 100, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            {/* GENDER FILTER */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#1a1714", minWidth: 90, textTransform: "uppercase" }}>
                 Gender:
               </span>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {genders.map((gen) => (
                   <button
                     key={gen}
+                    type="button"
                     onClick={() => setSelectedGender(gen)}
                     style={{
-                      padding: "6px 14px",
+                      padding: "6px 16px",
                       borderRadius: 99,
-                      border: selectedGender === gen ? "2px solid #1a1714" : "1.5px solid #e2e8f0",
+                      border: selectedGender === gen ? "2px solid #1a1714" : "1.5px solid #f6a2a2",
                       background: selectedGender === gen ? "#1a1714" : "#ffffff",
                       color: selectedGender === gen ? "#ffffff" : "#1a1714",
                       fontSize: 13,
@@ -155,21 +145,22 @@ export function KidsPageClient({ initialProducts }: Props) {
               </div>
             </div>
 
-            {/* 3. FILTER BY OUTFIT CATEGORY */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: "#1a1714", minWidth: 100, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            {/* CATEGORY FILTER */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#1a1714", minWidth: 90, textTransform: "uppercase" }}>
                 Category:
               </span>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {categories.map((cat) => (
                   <button
                     key={cat}
+                    type="button"
                     onClick={() => setSelectedCategory(cat)}
                     style={{
-                      padding: "6px 14px",
+                      padding: "6px 16px",
                       borderRadius: 99,
-                      border: selectedCategory === cat ? "2px solid #1a1714" : "1.5px solid #e2e8f0",
-                      background: selectedCategory === cat ? "#1a1714" : "#ffdbdb",
+                      border: selectedCategory === cat ? "2px solid #1a1714" : "1.5px solid #f6a2a2",
+                      background: selectedCategory === cat ? "#1a1714" : "#fcc3c3",
                       color: selectedCategory === cat ? "#ffffff" : "#1a1714",
                       fontSize: 13,
                       fontWeight: 700,
@@ -184,17 +175,16 @@ export function KidsPageClient({ initialProducts }: Props) {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* PRODUCTS GRID SECTION ABOVE #ffdbdb BACKGROUND */}
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
+        {/* PRODUCTS GRID */}
         {filtered.length === 0 ? (
           <div style={{ background: "#ffffff", padding: "48px 24px", borderRadius: 20, textAlign: "center", border: "2px solid #f6a2a2" }}>
             <h3 style={{ fontSize: 20, fontWeight: 700, color: "#1a1714" }}>No kids products match your filter</h3>
-            <p style={{ color: "#666", fontSize: 14 }}>Try clearing some filters to see all available outfits.</p>
+            <p style={{ color: "#666", fontSize: 14 }}>Try resetting your filters to explore all cute dresses.</p>
             <button
+              type="button"
               onClick={() => { setSelectedAge("All"); setSelectedGender("All"); setSelectedCategory("All"); }}
-              style={{ padding: "10px 20px", background: "#1a1714", color: "#fff", borderRadius: 99, border: "none", fontWeight: 700, marginTop: 12, cursor: "pointer" }}
+              style={{ padding: "10px 22px", background: "#1a1714", color: "#fff", borderRadius: 99, border: "none", fontWeight: 700, marginTop: 12, cursor: "pointer" }}
             >
               Reset Filters
             </button>
@@ -217,7 +207,6 @@ export function KidsPageClient({ initialProducts }: Props) {
                     boxShadow: "0 6px 18px rgba(0,0,0,0.05)",
                     display: "flex",
                     flexDirection: "column",
-                    transition: "transform 0.2s, box-shadow 0.2s",
                   }}
                 >
                   <div style={{ position: "relative", aspectRatio: "4/5", background: "#fff5f5", overflow: "hidden" }}>
@@ -239,6 +228,7 @@ export function KidsPageClient({ initialProducts }: Props) {
                     </div>
 
                     <button
+                      type="button"
                       className="icon-btn"
                       style={{
                         position: "absolute",
@@ -250,6 +240,7 @@ export function KidsPageClient({ initialProducts }: Props) {
                         borderRadius: 99,
                         width: 36,
                         height: 36,
+                        cursor: "pointer",
                         boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                       }}
                       onClick={() => toggleWishlist(p as unknown as Product)}
@@ -258,12 +249,12 @@ export function KidsPageClient({ initialProducts }: Props) {
                     </button>
                   </div>
 
-                  {/* CARD DETAILS */}
+                  {/* CARD BODY */}
                   <div style={{ padding: "18px 20px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                     <div>
                       <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1a1714", margin: "0 0 8px 0" }}>{p.name}</h3>
 
-                      {/* AGE / SIZE BADGES */}
+                      {/* AGE / SIZE SELECTOR BADGES */}
                       <div style={{ margin: "10px 0" }}>
                         <div style={{ fontSize: 11, fontWeight: 700, color: "#666", textTransform: "uppercase", marginBottom: 6 }}>
                           Select Size (Age):
@@ -272,7 +263,8 @@ export function KidsPageClient({ initialProducts }: Props) {
                           {(p.sizes || ["2–3 Years", "4–5 Years", "6–7 Years", "8–9 Years"]).map((sz) => (
                             <button
                               key={sz}
-                              onClick={() => setSelectedSizes({ ...selectedSizes, [p.id]: sz })}
+                              type="button"
+                              onClick={() => setSelectedSizes((prev) => ({ ...prev, [p.id]: sz }))}
                               style={{
                                 padding: "4px 10px",
                                 borderRadius: 8,
@@ -291,7 +283,7 @@ export function KidsPageClient({ initialProducts }: Props) {
                       </div>
                     </div>
 
-                    {/* PRICE & ADD TO CART */}
+                    {/* PRICE & ADD TO CART BUTTON */}
                     <div style={{ marginTop: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                       <div>
                         <div style={{ fontFamily: "var(--font-bebas), 'Bebas Neue', sans-serif", fontSize: 24, color: "#1a1714", margin: 0 }}>
@@ -301,6 +293,7 @@ export function KidsPageClient({ initialProducts }: Props) {
                       </div>
 
                       <button
+                        type="button"
                         onClick={() =>
                           addToCart({
                             ...(p as unknown as Product),
@@ -318,7 +311,6 @@ export function KidsPageClient({ initialProducts }: Props) {
                           fontSize: 13,
                           cursor: "pointer",
                           boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
-                          transition: "transform 0.15s",
                         }}
                       >
                         + Add to Cart

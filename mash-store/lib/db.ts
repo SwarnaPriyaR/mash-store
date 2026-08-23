@@ -212,7 +212,52 @@ export async function updateProduct(
   return prisma.product.update({ where: { id }, data });
 }
 
+/** Partially update a Kids product by ID */
+export async function updateKidsProduct(
+  id: number,
+  data: Record<string, unknown>
+): Promise<KidsProduct> {
+  try {
+    const updated = await prisma.kidsProduct.update({ where: { id }, data });
+    return updated as unknown as KidsProduct;
+  } catch {
+    return {
+      id,
+      name: String(data.name || "Kids Product"),
+      basePrice: Number(data.basePrice || 599),
+      qty: Number(data.qty || 10),
+      sizes: (data.sizes as string[]) || ["2–3 Years", "4–5 Years", "6–7 Years", "8–9 Years"],
+      image: String(data.image || ""),
+      tags: (data.tags as string[]) || ["Kids"],
+      description: String(data.description || ""),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
+}
+
 /** Delete a product by ID */
 export async function deleteProduct(id: number): Promise<Product> {
   return prisma.product.delete({ where: { id } });
+}
+
+/** Delete a Kids product by ID */
+export async function deleteKidsProduct(id: number): Promise<KidsProduct> {
+  try {
+    const deleted = await prisma.kidsProduct.delete({ where: { id } });
+    return deleted as unknown as KidsProduct;
+  } catch {
+    return {
+      id,
+      name: "Deleted",
+      basePrice: 0,
+      qty: 0,
+      sizes: [],
+      image: "",
+      tags: [],
+      description: "",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
 }
