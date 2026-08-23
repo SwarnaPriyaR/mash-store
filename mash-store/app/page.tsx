@@ -5,9 +5,9 @@ import { HomePageClient } from "./HomePageClient";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "MASH Store — Premium Streetwear",
+  title: "MASH Store",
   description:
-    "Premium T-shirts crafted for those who refuse to blend in. Heavyweight cotton, bold graphics, zero compromise.",
+    "Premium T-shirts crafted for those who refuse to blend in.",
 };
 
 export default function HomePage() {
@@ -25,8 +25,7 @@ export default function HomePage() {
           <span>ATTITUDE</span>
         </h1>
         <p className="hero-sub">
-          Premium T-shirts crafted for those who refuse to blend in. Heavyweight
-          cotton, bold graphics, zero compromise.
+          Premium T-shirts crafted for those who refuse to blend in.
         </p>
         <div style={{ display: "flex", gap: "16px", justifyContent: "center", alignItems: "center", flexWrap: "wrap" }}>
           <Link href="/products" className="cta-btn" style={{ textDecoration: "none" }}>
@@ -45,7 +44,7 @@ export default function HomePage() {
           </Link>
         </div>
         <div className="hero-strips">
-          {["Free Shipping Above ₹999", "100% Cotton", "6 Signature Styles"].map(
+          {["100% Cotton", "No COD"].map(
             (s) => (
               <div className="strip" key={s}>
                 <div className="strip-dot" />

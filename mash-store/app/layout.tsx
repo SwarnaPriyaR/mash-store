@@ -22,9 +22,9 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "MASH Store — Premium Streetwear",
+  title: "MASH Store",
   description:
-    "Premium T-shirts crafted for those who refuse to blend in. Heavyweight cotton, bold graphics, zero compromise.",
+    "Premium T-shirts crafted for those who refuse to blend in.",
   keywords: ["MASH", "streetwear", "t-shirts", "premium cotton", "oversized tees"],
 };
 
