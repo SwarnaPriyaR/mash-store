@@ -5,7 +5,6 @@ import { CartProvider } from "@/components/CartProvider";
 import { SaleProvider } from "@/components/SaleProvider";
 import { NavBar } from "@/components/NavBar";
 
-// Load fonts via next/font — avoids layout shift and works correctly with Next.js
 const bebasNeue = Bebas_Neue({
   weight: "400",
   subsets: ["latin"],
@@ -15,17 +14,24 @@ const bebasNeue = Bebas_Neue({
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
+  weight: ["300", "400", "500", "600", "700"],
   style: ["normal", "italic"],
   variable: "--font-dm-sans",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "MASH Store",
+  title: {
+    default: "MASH Store — Wear Your Attitude",
+    template: "%s | MASH Store",
+  },
   description:
-    "Premium T-shirts crafted for those who refuse to blend in.",
+    "Premium T-shirts crafted for those who refuse to blend in. Heavyweight cotton, bold graphics, zero compromise.",
   keywords: ["MASH", "streetwear", "t-shirts", "premium cotton", "oversized tees"],
+  icons: {
+    icon: "/asset/mashLogo.png",
+    apple: "/asset/mashLogo.png",
+  },
 };
 
 export default function RootLayout({
