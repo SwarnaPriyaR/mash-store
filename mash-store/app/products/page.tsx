@@ -1,25 +1,22 @@
 "use client";
-// app/products/page.tsx — Products Page
-// Data is fetched via Server Component wrapper, product card interactions are client-side.
+// app/products/page.tsx — Adult Products Page
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/Icon";
 import { useCart } from "@/components/CartProvider";
 import { useSale } from "@/components/SaleProvider";
-import { convertDriveUrl } from "@/lib/helpers";
+import { convertDriveUrl, getSizeStock } from "@/lib/helpers";
 import type { Product } from "@/lib/db";
 
-// Products listing fetched from Route Handler so we can keep this fully client-rendered
-// for wishlist/sale interactions, which need client state.
 export default function ProductsPage() {
-  const { wishlist, toggleWishlist } = useCart();
+  const { wishlist, toggleWishlist, addToCart } = useCart();
   const { sale } = useSale();
   const [products, setProducts] = useState<(Product & { price: number })[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState("All");
-  const [fitFilter, setFitFilter] = useState("All");
+  const [selectedSizes, setSelectedSizes] = useState<Record<number, string>>({});
 
   useEffect(() => {
     fetch("/api/product/allProduct")
@@ -37,7 +34,6 @@ export default function ProductsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Apply sale prices whenever sale changes
   useEffect(() => {
     if (!sale.active) return;
     setProducts((prev) =>
@@ -51,16 +47,14 @@ export default function ProductsPage() {
     );
   }, [sale]);
 
-  const categories = ["All", "Men T-Shirt", "Women T-Shirt", "Kids Dress"];
-  const fits = ["All", "Regular", "Oversized"];
+  const categories = ["All", "Men", "Women", "Unisex"];
 
   const filtered = products.filter((p) => {
     const matchCategory =
       categoryFilter === "All" ||
       p.category?.toLowerCase() === categoryFilter.toLowerCase() ||
       p.tags?.some((t) => t.toLowerCase() === categoryFilter.toLowerCase());
-    const matchFit = fitFilter === "All" || p.fit === fitFilter;
-    return matchCategory && matchFit;
+    return matchCategory;
   });
 
   const isSaleOn = sale.active && Date.now() >= sale.start && Date.now() <= sale.end;
@@ -91,56 +85,73 @@ export default function ProductsPage() {
         </p>
       </div>
 
-      {/* Category & Fit Filters */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
-        <div className="fit-filter" style={{ marginBottom: 0 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, alignSelf: "center", marginRight: 8, color: "var(--text2)" }}>Category:</span>
-          {categories.map((c) => (
-            <button
-              key={c}
-              className={`fit-chip ${categoryFilter === c ? "active" : ""}`}
-              onClick={() => setCategoryFilter(c)}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
-
-        <div className="fit-filter" style={{ marginBottom: 0 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, alignSelf: "center", marginRight: 8, color: "var(--text2)" }}>Fit:</span>
-          {fits.map((f) => (
-            <button
-              key={f}
-              className={`fit-chip ${fitFilter === f ? "active" : ""}`}
-              onClick={() => setFitFilter(f)}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
+      {/* Category Filters: Men, Women, Unisex */}
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 28 }}>
+        <span style={{ fontSize: 13, fontWeight: 700, alignSelf: "center", marginRight: 4, color: "var(--text2)" }}>Category:</span>
+        {categories.map((c) => (
+          <button
+            key={c}
+            className={`fit-chip ${categoryFilter === c ? "active" : ""}`}
+            onClick={() => setCategoryFilter(c)}
+          >
+            {c}
+          </button>
+        ))}
       </div>
+
       <div className="product-grid">
         {filtered.map((p) => {
           const onSale = isSaleOn && p.price < p.basePrice;
+          const sizeStockMap = getSizeStock(p);
+          const availableSizes = p.sizes || ["S", "M", "L", "XL"];
+          const isAllOutOfStock = p.qty === 0 || availableSizes.every((sz) => (sizeStockMap[sz] ?? 0) <= 0);
+          const currentSize = selectedSizes[p.id] || availableSizes.find((sz) => (sizeStockMap[sz] ?? 0) > 0) || availableSizes[0];
+
           return (
             <div
-              className={`product-card ${p.qty === 0 ? "oos" : ""}`}
+              className={`product-card ${isAllOutOfStock ? "oos" : ""}`}
               key={p.id}
             >
-              <div className="product-img-wrap">
-                <img src={p.image} alt={p.name} className="product-img" loading="lazy" />
-                <div className="product-tags">
-                  {p.tags.map((t) => (
-                    <span key={t} className="product-tag">{t}</span>
-                  ))}
-                  {onSale && <span className="sale-tag">{sale.discount}% OFF</span>}
-                  {p.qty === 0 && <span className="oos-tag">Out of Stock</span>}
-                </div>
-                {p.qty > 0 && (
-                  <div className="qty-tag">
-                    {p.qty <= 5 ? `Only ${p.qty} left!` : `${p.qty} in stock`}
+              <div className="product-img-wrap" style={{ position: "relative", overflow: "hidden" }}>
+                <img
+                  src={p.image}
+                  alt={p.name}
+                  className="product-img"
+                  loading="lazy"
+                  style={{
+                    filter: isAllOutOfStock ? "blur(3.5px) grayscale(70%) opacity(0.7)" : "none",
+                    transition: "filter 0.3s",
+                  }}
+                />
+
+                {/* OUT OF STOCK BANNER OVER IMAGE */}
+                {isAllOutOfStock ? (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "50%",
+                      left: 0,
+                      right: 0,
+                      transform: "translateY(-50%)",
+                      background: "rgba(225, 29, 72, 0.92)",
+                      color: "#ffffff",
+                      fontWeight: 800,
+                      fontSize: 13,
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                      textAlign: "center",
+                      padding: "8px 0",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                    }}
+                  >
+                    OUT OF STOCK
                   </div>
-                )}
+                ) : onSale ? (
+                  <span className="sale-tag" style={{ position: "absolute", top: 12, left: 12 }}>
+                    {sale.discount}% OFF
+                  </span>
+                ) : null}
+
                 <button
                   className="icon-btn"
                   style={{
@@ -153,23 +164,68 @@ export default function ProductsPage() {
                   <Icon.Heart filled={wishlist.includes(p.id)} />
                 </button>
               </div>
-              <Link
-                href={p.qty > 0 ? `/product/${p.id}` : "#"}
-                style={{ textDecoration: "none", color: "inherit" }}
-              >
-                <div className="product-info">
-                  <div>
-                    <div className="product-name">{p.name}</div>
-                    <div style={{ fontSize: 11, color: "var(--text2)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 2 }}>{p.fit}</div>
-                  </div>
-                  <div className="price-row">
-                    <span className="product-price">
-                      <span className="product-price-prefix">₹</span>{p.price}
-                    </span>
-                    {onSale && <span className="product-price-orig">₹{p.basePrice}</span>}
+
+              <div className="product-info" style={{ padding: "14px 16px" }}>
+                <div>
+                  <div className="product-name">{p.name}</div>
+
+                  {/* SIZES WITH PER-SIZE CROSS OUT */}
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8, marginBottom: 8 }}>
+                    {availableSizes.map((sz) => {
+                      const count = sizeStockMap[sz] ?? 0;
+                      const isSizeOOS = isAllOutOfStock || count <= 0;
+
+                      return (
+                        <button
+                          key={sz}
+                          type="button"
+                          disabled={isSizeOOS}
+                          onClick={() => setSelectedSizes((prev) => ({ ...prev, [p.id]: sz }))}
+                          style={{
+                            padding: "3px 8px",
+                            borderRadius: 6,
+                            border: currentSize === sz && !isSizeOOS ? "1.5px solid var(--accent)" : "1px solid var(--border)",
+                            background: isSizeOOS ? "var(--bg2)" : currentSize === sz ? "var(--accent)" : "var(--bg)",
+                            color: isSizeOOS ? "var(--text2)" : currentSize === sz ? "#ffffff" : "var(--text)",
+                            fontSize: 11,
+                            fontWeight: 500,
+                            textDecoration: isSizeOOS ? "line-through" : "none",
+                            opacity: isSizeOOS ? 0.45 : 1,
+                            cursor: isSizeOOS ? "not-allowed" : "pointer",
+                          }}
+                        >
+                          {sz}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-              </Link>
+
+                <div className="price-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                    <span className="product-price">₹{p.price}</span>
+                    {onSale && <span className="product-price-orig">₹{p.basePrice}</span>}
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={isAllOutOfStock}
+                    onClick={() => addToCart({ ...p, price: p.price, name: `${p.name} (${currentSize})` })}
+                    style={{
+                      padding: "8px 14px",
+                      borderRadius: 8,
+                      border: "none",
+                      background: isAllOutOfStock ? "var(--border)" : "var(--text)",
+                      color: isAllOutOfStock ? "var(--text2)" : "var(--bg)",
+                      fontWeight: 600,
+                      fontSize: 12,
+                      cursor: isAllOutOfStock ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    {isAllOutOfStock ? "Out of Stock" : "+ Add"}
+                  </button>
+                </div>
+              </div>
             </div>
           );
         })}

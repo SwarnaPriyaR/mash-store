@@ -59,3 +59,40 @@ export const convertDriveUrl = (url: string | undefined | null): string => {
   }
   return url;
 };
+
+/** Parses per-size stock map from sizeStock object or description marker */
+export function getSizeStock(
+  product: { sizes?: string[]; qty?: number; description?: string; sizeStock?: Record<string, number> }
+): Record<string, number> {
+  if (product.sizeStock && typeof product.sizeStock === "object") {
+    return product.sizeStock;
+  }
+
+  if (product.description && product.description.includes("<!--SIZE_STOCK:")) {
+    try {
+      const match = product.description.match(/<!--SIZE_STOCK:(.*?)-->/);
+      if (match && match[1]) {
+        return JSON.parse(match[1]);
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const sizes = product.sizes && product.sizes.length > 0 ? product.sizes : ["S", "M", "L", "XL"];
+  const total = product.qty !== undefined ? product.qty : 0;
+  const perSize = Math.floor(total / sizes.length);
+  const remainder = total % sizes.length;
+
+  const result: Record<string, number> = {};
+  sizes.forEach((sz, idx) => {
+    result[sz] = perSize + (idx === 0 ? remainder : 0);
+  });
+  return result;
+}
+
+/** Embeds size stock JSON marker inside description */
+export function embedSizeStockInDescription(desc: string = "", sizeStock: Record<string, number>): string {
+  const cleanDesc = desc.replace(/<!--SIZE_STOCK:.*?-->/g, "").trim();
+  return `${cleanDesc} <!--SIZE_STOCK:${JSON.stringify(sizeStock)}-->`;
+}

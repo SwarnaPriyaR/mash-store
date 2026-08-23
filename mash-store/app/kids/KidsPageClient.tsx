@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Icon } from "@/components/Icon";
 import { useCart } from "@/components/CartProvider";
 import { useSale } from "@/components/SaleProvider";
+import { getSizeStock } from "@/lib/helpers";
 import type { KidsProduct, Product } from "@/lib/db";
 
 interface Props {
@@ -22,8 +23,7 @@ export function KidsPageClient({ initialProducts }: Props) {
   const isSaleOn = sale.active && Date.now() >= sale.start && Date.now() <= sale.end;
 
   const ageGroups = ["All", "2–3 Years", "4–5 Years", "6–7 Years", "8–9 Years"];
-  const genders = ["All", "Girls", "Boys", "Unisex"];
-  const categories = ["All", "Dresses & Frocks", "Sets & Suits", "Dungarees & Overalls", "Tops & Tees"];
+  const genders = ["All", "Girl", "Boy", "Unisex"];
 
   const filtered = initialProducts.filter((p) => {
     const matchAge = selectedAge === "All" || (p.sizes && p.sizes.includes(selectedAge));
@@ -31,12 +31,8 @@ export function KidsPageClient({ initialProducts }: Props) {
       selectedGender === "All" ||
       p.tags?.some((t) => t.toLowerCase() === selectedGender.toLowerCase()) ||
       p.name.toLowerCase().includes(selectedGender.toLowerCase());
-    const matchCategory =
-      selectedCategory === "All" ||
-      p.tags?.some((t) => t.toLowerCase().includes(selectedCategory.toLowerCase().split(" ")[0])) ||
-      p.name.toLowerCase().includes(selectedCategory.toLowerCase().split(" ")[0]);
 
-    return matchAge && matchGender && matchCategory;
+    return matchAge && matchGender;
   });
 
   return (
@@ -52,7 +48,7 @@ export function KidsPageClient({ initialProducts }: Props) {
       }}
     >
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
-        {/* HEADER SECTION IN GLOBAL THEME */}
+        {/* HEADER SECTION */}
         <div style={{ marginBottom: 28 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
             <div>
@@ -88,7 +84,7 @@ export function KidsPageClient({ initialProducts }: Props) {
             </div>
           </div>
 
-          {/* FLOATING FILTERS IN GLOBAL THEME */}
+          {/* FLOATING FILTERS */}
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {/* AGE / SIZE FILTER */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -119,7 +115,7 @@ export function KidsPageClient({ initialProducts }: Props) {
               </div>
             </div>
 
-            {/* GENDER FILTER */}
+            {/* GENDER FILTER: Girl, Boy, Unisex */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", minWidth: 90, textTransform: "uppercase" }}>
                 Gender:
@@ -142,7 +138,7 @@ export function KidsPageClient({ initialProducts }: Props) {
                       transition: "all 0.15s",
                     }}
                   >
-                    {gen === "Girls" ? "Girls" : gen === "Boys" ? "Boys" : gen === "Unisex" ? "Unisex" : "All"}
+                    {gen}
                   </button>
                 ))}
               </div>
@@ -150,7 +146,7 @@ export function KidsPageClient({ initialProducts }: Props) {
           </div>
         </div>
 
-        {/* PRODUCTS GRID IN GLOBAL THEME */}
+        {/* PRODUCTS GRID */}
         {filtered.length === 0 ? (
           <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", padding: "48px 24px", borderRadius: 16, textAlign: "center" }}>
             <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)" }}>No products available</h3>
@@ -168,7 +164,12 @@ export function KidsPageClient({ initialProducts }: Props) {
             {filtered.map((p) => {
               const price = isSaleOn ? Math.round(p.basePrice * (1 - sale.discount / 100)) : p.basePrice;
               const onSale = isSaleOn && price < p.basePrice;
-              const currentSize = selectedSizes[p.id] || p.sizes?.[0] || "2–3 Years";
+              const sizeStockMap = getSizeStock(p);
+              const availableSizes = p.sizes || ["2–3 Years", "4–5 Years", "6–7 Years", "8–9 Years"];
+
+              // Determine if all sizes are out of stock
+              const isAllOutOfStock = p.qty === 0 || availableSizes.every((sz) => (sizeStockMap[sz] ?? 0) <= 0);
+              const currentSize = selectedSizes[p.id] || availableSizes.find((sz) => (sizeStockMap[sz] ?? 0) > 0) || availableSizes[0];
 
               return (
                 <div
@@ -184,13 +185,43 @@ export function KidsPageClient({ initialProducts }: Props) {
                   }}
                 >
                   <div style={{ position: "relative", aspectRatio: "4/5", background: "var(--bg2)", overflow: "hidden" }}>
+                    {/* PRODUCT IMAGE WITH BLUR IF ALL OUT OF STOCK */}
                     <img
                       src={p.image}
                       alt={p.name}
-                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        display: "block",
+                        filter: isAllOutOfStock ? "blur(3.5px) grayscale(70%) opacity(0.7)" : "none",
+                        transition: "filter 0.3s",
+                      }}
                     />
 
-                    {onSale && (
+                    {/* OUT OF STOCK BANNER / OVERLAY */}
+                    {isAllOutOfStock ? (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "50%",
+                          left: 0,
+                          right: 0,
+                          transform: "translateY(-50%)",
+                          background: "rgba(225, 29, 72, 0.92)",
+                          color: "#ffffff",
+                          fontWeight: 800,
+                          fontSize: 13,
+                          letterSpacing: "0.08em",
+                          textTransform: "uppercase",
+                          textAlign: "center",
+                          padding: "8px 0",
+                          boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                        }}
+                      >
+                        OUT OF STOCK
+                      </div>
+                    ) : onSale ? (
                       <span
                         style={{
                           position: "absolute",
@@ -206,7 +237,7 @@ export function KidsPageClient({ initialProducts }: Props) {
                       >
                         {sale.discount}% OFF
                       </span>
-                    )}
+                    ) : null}
 
                     <button
                       type="button"
@@ -244,31 +275,47 @@ export function KidsPageClient({ initialProducts }: Props) {
                         {p.name}
                       </h3>
 
-                      {/* AGE SIZE BADGES */}
+                      {/* AGE SIZE BADGES WITH PER-SIZE STOCK CROSS OUT */}
                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
-                        {(p.sizes || ["2–3 Years", "4–5 Years", "6–7 Years", "8–9 Years"]).map((sz) => (
-                          <button
-                            key={sz}
-                            type="button"
-                            onClick={() => setSelectedSizes((prev) => ({ ...prev, [p.id]: sz }))}
-                            style={{
-                              padding: "3px 8px",
-                              borderRadius: 6,
-                              border: currentSize === sz ? "1.5px solid var(--accent)" : "1px solid var(--border)",
-                              background: currentSize === sz ? "var(--accent)" : "var(--bg)",
-                              color: currentSize === sz ? "#ffffff" : "var(--text2)",
-                              fontSize: 11,
-                              fontWeight: 500,
-                              cursor: "pointer",
-                            }}
-                          >
-                            {sz}
-                          </button>
-                        ))}
+                        {availableSizes.map((sz) => {
+                          const sizeQty = sizeStockMap[sz] ?? 0;
+                          const isSizeOutOfStock = isAllOutOfStock || sizeQty <= 0;
+
+                          return (
+                            <button
+                              key={sz}
+                              type="button"
+                              disabled={isSizeOutOfStock}
+                              onClick={() => setSelectedSizes((prev) => ({ ...prev, [p.id]: sz }))}
+                              style={{
+                                padding: "3px 8px",
+                                borderRadius: 6,
+                                border: currentSize === sz && !isSizeOutOfStock ? "1.5px solid var(--accent)" : "1px solid var(--border)",
+                                background: isSizeOutOfStock
+                                  ? "var(--bg2)"
+                                  : currentSize === sz
+                                  ? "var(--accent)"
+                                  : "var(--bg)",
+                                color: isSizeOutOfStock
+                                  ? "var(--text2)"
+                                  : currentSize === sz
+                                  ? "#ffffff"
+                                  : "var(--text)",
+                                fontSize: 11,
+                                fontWeight: 500,
+                                textDecoration: isSizeOutOfStock ? "line-through" : "none",
+                                opacity: isSizeOutOfStock ? 0.45 : 1,
+                                cursor: isSizeOutOfStock ? "not-allowed" : "pointer",
+                              }}
+                            >
+                              {sz}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 
-                    {/* PRICING ROW */}
+                    {/* PRICING & ADD TO CART */}
                     <div>
                       <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
                         <span
@@ -297,6 +344,7 @@ export function KidsPageClient({ initialProducts }: Props) {
 
                       <button
                         type="button"
+                        disabled={isAllOutOfStock}
                         onClick={() =>
                           addToCart({
                             ...(p as unknown as Product),
@@ -310,14 +358,14 @@ export function KidsPageClient({ initialProducts }: Props) {
                           padding: "8px 14px",
                           borderRadius: 8,
                           border: "none",
-                          background: "var(--text)",
-                          color: "var(--bg)",
+                          background: isAllOutOfStock ? "var(--border)" : "var(--text)",
+                          color: isAllOutOfStock ? "var(--text2)" : "var(--bg)",
                           fontWeight: 600,
                           fontSize: 13,
-                          cursor: "pointer",
+                          cursor: isAllOutOfStock ? "not-allowed" : "pointer",
                         }}
                       >
-                        + Add to Cart
+                        {isAllOutOfStock ? "Out of Stock" : "+ Add to Cart"}
                       </button>
                     </div>
                   </div>
