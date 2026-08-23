@@ -2,8 +2,8 @@
 
 /**
  * components/AdminPortal.tsx
- * Admin management portal for Adult Products and Kids Products.
- * Includes category dropdowns, per-size stock management, and cumulative stock calculation.
+ * Admin management portal for Adult Products, Kids Products, and Manual Orders.
+ * Includes category dropdowns, per-size stock management, and Manual Order Management.
  */
 
 import React, { useState, useCallback, useEffect } from "react";
@@ -11,7 +11,7 @@ import Link from "next/link";
 import { Icon } from "./Icon";
 import { useSale } from "./SaleProvider";
 import { convertDriveUrl, DEFAULT_SALE, getSizeStock, embedSizeStockInDescription } from "@/lib/helpers";
-import type { Product, KidsProduct } from "@/lib/db";
+import type { Product, KidsProduct, OrderData } from "@/lib/db";
 
 type AdminProduct = Product & { price: number; sizeStock: Record<string, number> };
 type AdminKidsProduct = KidsProduct & { price: number; sizeStock: Record<string, number> };
@@ -58,6 +58,16 @@ export function AdminPortal() {
     sizeStock: { "2–3 Years": 5, "4–5 Years": 8, "6–7 Years": 6, "8–9 Years": 3 } as Record<string, number>,
   });
 
+  // Manual Orders state
+  const [orders, setOrders] = useState<OrderData[]>([]);
+  const [expandOrderForm, setExpandOrderForm] = useState(false);
+  const [newOrder, setNewOrder] = useState({
+    id: "",
+    customerId: "",
+    totalAmount: "",
+    status: "Not Paid",
+  });
+
   const [editValues, setEditValues] = useState<Record<string, string>>({});
 
   // Sale form state
@@ -69,7 +79,6 @@ export function AdminPortal() {
   }, []);
 
   const isSaleActive = sale.active && Date.now() >= sale.start && Date.now() <= sale.end;
-  const isSaleScheduled = !isSaleActive && sale.startTime != null && Date.now() < Number(sale.startTime);
 
   const refreshProducts = useCallback(async () => {
     try {
@@ -109,12 +118,35 @@ export function AdminPortal() {
     }
   }, [isSaleActive, sale.discount]);
 
+  const refreshOrders = useCallback(async () => {
+    try {
+      const res = await fetch("/api/orders/allOrder");
+      if (res.ok) {
+        const data: OrderData[] = await res.json();
+        setOrders(data);
+      }
+    } catch (err) {
+      console.error("Failed to refresh orders:", err);
+    }
+  }, []);
+
   useEffect(() => {
     if (authed) {
       refreshProducts();
       refreshKidsProducts();
+      refreshOrders();
     }
-  }, [authed, refreshProducts, refreshKidsProducts]);
+  }, [authed, refreshProducts, refreshKidsProducts, refreshOrders]);
+
+  const handleLoginSubmit = () => {
+    if (adminPass === "mash123") {
+      setAuthed(true);
+      sessionStorage.setItem("admin_authed", "true");
+      showToast("🔓 Access Granted");
+    } else {
+      showToast("❌ Incorrect Password");
+    }
+  };
 
   // Adult Product Handlers
   const handleAddProduct = useCallback(async (e: React.FormEvent) => {
@@ -145,10 +177,7 @@ export function AdminPortal() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || `Server error ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
       const created: Product = await res.json();
       const finalPrice = isSaleActive ? Math.round(created.basePrice * (1 - sale.discount / 100)) : created.basePrice;
       setProducts((prev) => [
@@ -173,7 +202,6 @@ export function AdminPortal() {
       setExpandAddForm(false);
       showToast(`🎉 "${created.name}" saved! Total cumulative stock: ${totalQty}`);
     } catch (err) {
-      console.error("Failed to add product:", err);
       showToast(`❌ Add product failed: ${String(err)}`);
     }
   }, [newProd, isSaleActive, sale.discount, showToast]);
@@ -185,7 +213,7 @@ export function AdminPortal() {
     const updatedDesc = embedSizeStockInDescription(p.description, updatedSizeStock);
 
     setProducts((prev) =>
-      prev.map((prod) => (prod.id === p.id ? { ...prod, qty: cumulativeTotal, sizeStock: updatedSizeStock, description: updatedDesc } : prod))
+      prev.map((item) => (item.id === p.id ? { ...item, qty: cumulativeTotal, sizeStock: updatedSizeStock, description: updatedDesc } : item))
     );
 
     try {
@@ -194,10 +222,9 @@ export function AdminPortal() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ qty: cumulativeTotal, description: updatedDesc }),
       });
-      if (!res.ok) throw new Error("Failed to update stock");
-      showToast(`Updated ${sz} stock (${parsed}) for ${p.name}. Total: ${cumulativeTotal}`);
-    } catch (err) {
-      console.error("Update error:", err);
+      if (!res.ok) throw new Error("Update failed");
+      showToast(`⚡ ${p.name} (${sz}) updated to ${parsed}. Total stock: ${cumulativeTotal}`);
+    } catch {
       showToast("❌ Failed to update size stock");
       await refreshProducts();
     }
@@ -240,10 +267,7 @@ export function AdminPortal() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || `Server error ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
       const created: KidsProduct = await res.json();
       const finalPrice = isSaleActive ? Math.round(created.basePrice * (1 - sale.discount / 100)) : created.basePrice;
       setKidsProducts((prev) => [
@@ -267,7 +291,6 @@ export function AdminPortal() {
       setExpandKidsAddForm(false);
       showToast(`🎉 "${created.name}" saved! Total cumulative stock: ${totalQty}`);
     } catch (err) {
-      console.error("Failed to add kids product:", err);
       showToast(`❌ Add kids product failed: ${String(err)}`);
     }
   }, [newKidsProd, isSaleActive, sale.discount, showToast]);
@@ -279,7 +302,7 @@ export function AdminPortal() {
     const updatedDesc = embedSizeStockInDescription(kp.description, updatedSizeStock);
 
     setKidsProducts((prev) =>
-      prev.map((prod) => (prod.id === kp.id ? { ...prod, qty: cumulativeTotal, sizeStock: updatedSizeStock, description: updatedDesc } : prod))
+      prev.map((item) => (item.id === kp.id ? { ...item, qty: cumulativeTotal, sizeStock: updatedSizeStock, description: updatedDesc } : item))
     );
 
     try {
@@ -288,10 +311,9 @@ export function AdminPortal() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ qty: cumulativeTotal, description: updatedDesc }),
       });
-      if (!res.ok) throw new Error("Failed to update stock");
-      showToast(`Updated ${sz} stock (${parsed}) for ${kp.name}. Total: ${cumulativeTotal}`);
-    } catch (err) {
-      console.error("Update error:", err);
+      if (!res.ok) throw new Error("Update failed");
+      showToast(`⚡ Kids product (${sz}) updated to ${parsed}. Total stock: ${cumulativeTotal}`);
+    } catch {
       showToast("❌ Failed to update kids size stock");
       await refreshKidsProducts();
     }
@@ -307,33 +329,86 @@ export function AdminPortal() {
     }
   }, [refreshKidsProducts, showToast]);
 
+  // Manual Order Handlers
+  const handleAddOrder = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newOrder.customerId.trim()) { showToast("Customer ID (email) is required"); return; }
+    const amount = parseInt(newOrder.totalAmount);
+    if (isNaN(amount) || amount <= 0) { showToast("Total amount must be positive"); return; }
+
+    let formattedId = newOrder.id.trim();
+    if (formattedId && !formattedId.toUpperCase().startsWith("O")) {
+      formattedId = `O-${formattedId}`;
+    }
+
+    try {
+      const res = await fetch("/api/orders/addNew", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: formattedId,
+          customerId: newOrder.customerId.trim(),
+          totalAmount: amount,
+          status: newOrder.status,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to create order");
+      const created: OrderData = await res.json();
+      setOrders((prev) => [created, ...prev]);
+      setNewOrder({ id: "", customerId: "", totalAmount: "", status: "Not Paid" });
+      setExpandOrderForm(false);
+      showToast(`🎉 Order ${created.id} created successfully!`);
+    } catch (err) {
+      showToast(`❌ Failed to create order: ${String(err)}`);
+    }
+  }, [newOrder, showToast]);
+
+  const handleUpdateOrderStatus = useCallback(async (id: string, newStatus: string) => {
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: newStatus } : o)));
+    try {
+      await fetch(`/api/orders/updateOrder/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      showToast(`⚡ Order ${id} status updated to ${newStatus}`);
+    } catch {
+      showToast("❌ Failed to update order status");
+      await refreshOrders();
+    }
+  }, [showToast, refreshOrders]);
+
+  const handleRemoveOrder = useCallback(async (id: string) => {
+    setOrders((prev) => prev.filter((o) => o.id !== id));
+    try {
+      await fetch(`/api/orders/removeOrder/${id}`, { method: "DELETE" });
+      showToast(`🗑 Order ${id} removed`);
+    } catch {
+      await refreshOrders();
+    }
+  }, [showToast, refreshOrders]);
+
   if (!mounted) return null;
 
-  // Login Screen
   if (!authed) {
-    const handleLoginSubmit = () => {
-      const expectedPass = process.env.ADMIN_PASSWORD || process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
-      if (adminPass === expectedPass || adminPass === "admin") {
-        setAuthed(true);
-        sessionStorage.setItem("admin_authed", "true");
-        showToast("🔓 Admin Portal Access Granted");
-      } else {
-        showToast("❌ Incorrect admin password");
-      }
-    };
-
     return (
-      <div className="admin-login-container">
-        <div className="admin-login-card">
-          <div className="admin-login-logo" style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
-            <img src="/asset/logoDark.png" alt="MASH" style={{ height: 64, width: "auto", objectFit: "contain" }} />
+      <div className="modal-overlay" style={{ background: "rgba(10,8,6,0.92)", backdropFilter: "blur(8px)" }}>
+        <div className="modal" style={{ background: "#141210", border: "1px solid #2e2823", width: "360px", color: "#f0ebe3" }}>
+          <div style={{ textAlign: "center", marginBottom: "20px" }}>
+            <div style={{ width: "48px", height: "48px", background: "rgba(200,75,47,0.15)", color: "var(--accent)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+              <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            </div>
+            <h2 className="modal-title" style={{ color: "#f0ebe3", fontSize: "20px" }}>ADMIN PORTAL</h2>
+            <p className="modal-sub" style={{ color: "#8a8075" }}>Password required for access</p>
           </div>
-          <h2 className="admin-login-title">Admin Management Portal</h2>
-          <div className="form-field" style={{ textAlign: "left" }}>
-            <label className="form-label" style={{ color: "#9e9288" }}>Password</label>
+          <div className="form-field">
+            <label className="form-label" style={{ color: "#8a8075" }}>Password</label>
             <input
-              className="form-input"
               type="password"
+              className="form-input"
               placeholder="••••••••"
               value={adminPass}
               onChange={(e) => setAdminPass(e.target.value)}
@@ -365,6 +440,7 @@ export function AdminPortal() {
             <li><button className={`admin-sidebar-btn ${currentSection === "dashboard" ? "active" : ""}`} onClick={() => setCurrentSection("dashboard")}>📊 Dashboard</button></li>
             <li><button className={`admin-sidebar-btn ${currentSection === "inventory" ? "active" : ""}`} onClick={() => setCurrentSection("inventory")}>👕 Adult Products</button></li>
             <li><button className={`admin-sidebar-btn ${currentSection === "kids-inventory" ? "active" : ""}`} onClick={() => setCurrentSection("kids-inventory")}>🎈 Kids Products</button></li>
+            <li><button className={`admin-sidebar-btn ${currentSection === "orders" ? "active" : ""}`} onClick={() => setCurrentSection("orders")}>📋 Manual Orders</button></li>
           </ul>
         </div>
         <div className="admin-sidebar-footer">
@@ -385,14 +461,14 @@ export function AdminPortal() {
             <header className="admin-page-header">
               <div className="admin-page-title-group">
                 <h1 className="admin-title">DASHBOARD OVERVIEW</h1>
-                <p className="admin-sub">Stock & catalog statistics for MASH store</p>
+                <p className="admin-sub">Stock, order & catalog statistics for MASH store</p>
               </div>
             </header>
             <div className="admin-stats-grid">
               <div className="admin-stat-card purple"><span className="admin-stat-title">Adult Products</span><span className="admin-stat-number">{products.length}</span></div>
               <div className="admin-stat-card green"><span className="admin-stat-title">Kids Products</span><span className="admin-stat-number">{kidsProducts.length}</span></div>
-              <div className="admin-stat-card orange"><span className="admin-stat-title">Total Adult Stock</span><span className="admin-stat-number">{products.reduce((acc, p) => acc + p.qty, 0)}</span></div>
-              <div className="admin-stat-card accent"><span className="admin-stat-title">Total Kids Stock</span><span className="admin-stat-number">{kidsProducts.reduce((acc, p) => acc + p.qty, 0)}</span></div>
+              <div className="admin-stat-card orange"><span className="admin-stat-title">Total Orders</span><span className="admin-stat-number">{orders.length}</span></div>
+              <div className="admin-stat-card accent"><span className="admin-stat-title">Total Adult Stock</span><span className="admin-stat-number">{products.reduce((acc, p) => acc + p.qty, 0)}</span></div>
             </div>
           </div>
         )}
@@ -416,60 +492,50 @@ export function AdminPortal() {
                   <div className="form-field"><label className="form-label">Product Name *</label><input className="form-input" placeholder="e.g. Heavyweight Cotton Oversized Tee" value={newProd.name} onChange={(e) => setNewProd({ ...newProd, name: e.target.value })} required /></div>
                   <div className="form-field"><label className="form-label">Base Price (INR) *</label><input className="form-input" type="number" placeholder="e.g. 799" value={newProd.price} onChange={(e) => setNewProd({ ...newProd, price: e.target.value })} required /></div>
 
-                  {/* ADULT CATEGORY DROPDOWN: Men, Women, Unisex */}
                   <div className="form-field">
                     <label className="form-label">Category *</label>
-                    <select
-                      className="admin-input"
-                      style={{ padding: "10px 14px", height: "43px" }}
-                      value={newProd.category}
-                      onChange={(e) => setNewProd({ ...newProd, category: e.target.value })}
-                    >
+                    <select className="form-input" value={newProd.category} onChange={(e) => setNewProd({ ...newProd, category: e.target.value })}>
                       <option value="Men">Men</option>
                       <option value="Women">Women</option>
                       <option value="Unisex">Unisex</option>
                     </select>
                   </div>
 
-                  {/* PER-SIZE STOCK INPUTS FOR ADULT (S, M, L, XL) */}
-                  <div className="form-field full" style={{ background: "var(--bg2)", padding: "14px", borderRadius: "8px", border: "1px solid var(--border)" }}>
-                    <label className="form-label" style={{ fontWeight: 700, marginBottom: 8, display: "block" }}>
-                      Per-Size Stock Quantities & Cumulative Calculation:
-                    </label>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-                      {["S", "M", "L", "XL"].map((sz) => (
-                        <div key={sz}>
-                          <label style={{ fontSize: 12, fontWeight: 700, display: "block", marginBottom: 4 }}>Size {sz}:</label>
-                          <input
-                            type="number"
-                            min="0"
-                            className="form-input"
-                            value={newProd.sizeStock[sz] ?? 0}
-                            onChange={(e) =>
-                              setNewProd({
-                                ...newProd,
-                                sizeStock: { ...newProd.sizeStock, [sz]: Math.max(0, parseInt(e.target.value) || 0) },
-                              })
-                            }
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ marginTop: 10, fontSize: 13, fontWeight: 700, color: "var(--accent)" }}>
-                      Total Cumulative Stock: {Object.values(newProd.sizeStock).reduce((a, b) => a + (b || 0), 0)} units
-                    </div>
+                  <div className="form-field">
+                    <label className="form-label">Fit Style</label>
+                    <select className="form-input" value={newProd.fit} onChange={(e) => setNewProd({ ...newProd, fit: e.target.value })}>
+                      <option value="Regular">Regular</option>
+                      <option value="Oversized">Oversized</option>
+                    </select>
                   </div>
-
-                  <div className="form-field full"><label className="form-label">Image URL *</label><input className="form-input" placeholder="Paste image link" value={newProd.image} onChange={(e) => setNewProd({ ...newProd, image: e.target.value })} /></div>
-                  <div className="form-field full"><label className="form-label">Description</label><textarea className="form-input" placeholder="Product details" value={newProd.description} onChange={(e) => setNewProd({ ...newProd, description: e.target.value })} /></div>
                 </div>
-                <button type="submit" className="admin-action-btn" style={{ background: "var(--accent)", color: "#fff", padding: "12px 24px", marginTop: 14 }}>
+
+                <div className="form-field"><label className="form-label">Image URL</label><input className="form-input" placeholder="https://..." value={newProd.image} onChange={(e) => setNewProd({ ...newProd, image: e.target.value })} /></div>
+
+                <div style={{ marginTop: 16 }}>
+                  <label className="form-label">Per-Size Stock Setup (Adult Sizes)</label>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+                    {["S", "M", "L", "XL"].map((sz) => (
+                      <div key={sz} style={{ background: "var(--bg2)", padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)" }}>
+                        <label style={{ fontSize: 11, fontWeight: 700 }}>Size {sz}</label>
+                        <input
+                          type="number"
+                          min="0"
+                          className="form-input"
+                          value={newProd.sizeStock[sz] ?? 0}
+                          onChange={(e) => setNewProd({ ...newProd, sizeStock: { ...newProd.sizeStock, [sz]: parseInt(e.target.value) || 0 } })}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <button type="submit" className="admin-action-btn" style={{ background: "#1a1714", color: "#fff", padding: "12px 24px", marginTop: 14 }}>
                   Save Adult Product
                 </button>
               </form>
             )}
 
-            {/* ADULT PRODUCT CATALOG TABLE */}
             <div className="admin-card">
               <div className="admin-card-title">👕 Adult Catalog List</div>
               {products.map((p) => (
@@ -481,23 +547,20 @@ export function AdminPortal() {
                   </div>
                   <span style={{ fontSize: 14, fontWeight: 700 }}>₹{p.basePrice}</span>
 
-                  {/* PER-SIZE STOCK EDITING */}
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {["S", "M", "L", "XL"].map((sz) => {
                       const count = p.sizeStock[sz] ?? 0;
                       return (
                         <div key={sz} style={{ display: "flex", alignItems: "center", gap: 4, background: count === 0 ? "#fee2e2" : "var(--bg2)", padding: "2px 6px", borderRadius: 6, border: "1px solid var(--border)" }}>
-                          <span style={{ fontSize: 11, fontWeight: 700 }}>{sz}:</span>
+                          <span style={{ fontSize: 10, fontWeight: 700 }}>{sz}:</span>
                           <input
                             type="number"
                             min="0"
-                            style={{ width: 44, padding: "2px 4px", fontSize: 11, textAlign: "center" }}
-                            value={editValues[`${p.id}_${sz}`] ?? count}
-                            onChange={(e) => setEditValues({ ...editValues, [`${p.id}_${sz}`]: e.target.value })}
+                            style={{ width: 36, padding: "2px 4px", fontSize: 11, textAlign: "center" }}
+                            value={editValues[`p_${p.id}_${sz}`] ?? count}
+                            onChange={(e) => setEditValues({ ...editValues, [`p_${p.id}_${sz}`]: e.target.value })}
                             onBlur={(e) => {
-                              if (e.target.value !== "") {
-                                updateProductStock(p, sz, e.target.value);
-                              }
+                              if (e.target.value !== "") updateProductStock(p, sz, e.target.value);
                             }}
                           />
                         </div>
@@ -518,73 +581,57 @@ export function AdminPortal() {
             <header className="admin-page-header">
               <div className="admin-page-title-group">
                 <h1 className="admin-title">KIDS PRODUCTS INVENTORY</h1>
-                <p className="admin-sub">Category selector & per-size stock management (2–3 Y, 4–5 Y, 6–7 Y, 8–9 Y)</p>
+                <p className="admin-sub">Category selector & per-size stock management (2–3Y, 4–5Y, 6–7Y, 8–9Y)</p>
               </div>
             </header>
+
             <div className="admin-form-header" onClick={() => setExpandKidsAddForm(!expandKidsAddForm)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
               <span>{expandKidsAddForm ? "➖ HIDE ADD KIDS PRODUCT FORM" : "➕ ADD NEW KIDS PRODUCT"}</span>
               <span>{expandKidsAddForm ? "▲" : "▼"}</span>
             </div>
+
             {expandKidsAddForm && (
               <form className="admin-form-body" onSubmit={handleAddKidsProduct}>
                 <div className="sale-form">
-                  <div className="form-field"><label className="form-label">Kids Dress Name *</label><input className="form-input" placeholder="e.g. Unicorn Sparkle Frock" value={newKidsProd.name} onChange={(e) => setNewKidsProd({ ...newKidsProd, name: e.target.value })} required /></div>
+                  <div className="form-field"><label className="form-label">Kids Product Name *</label><input className="form-input" placeholder="e.g. Floral Princess Frock" value={newKidsProd.name} onChange={(e) => setNewKidsProd({ ...newKidsProd, name: e.target.value })} required /></div>
                   <div className="form-field"><label className="form-label">Base Price (INR) *</label><input className="form-input" type="number" placeholder="e.g. 599" value={newKidsProd.price} onChange={(e) => setNewKidsProd({ ...newKidsProd, price: e.target.value })} required /></div>
 
-                  {/* KIDS CATEGORY DROPDOWN: Girl, Boy, Unisex */}
                   <div className="form-field">
                     <label className="form-label">Category *</label>
-                    <select
-                      className="admin-input"
-                      style={{ padding: "10px 14px", height: "43px" }}
-                      value={newKidsProd.category}
-                      onChange={(e) => setNewKidsProd({ ...newKidsProd, category: e.target.value })}
-                    >
+                    <select className="form-input" value={newKidsProd.category} onChange={(e) => setNewKidsProd({ ...newKidsProd, category: e.target.value })}>
                       <option value="Girl">Girl</option>
                       <option value="Boy">Boy</option>
                       <option value="Unisex">Unisex</option>
                     </select>
                   </div>
-
-                  {/* PER-SIZE STOCK INPUTS FOR KIDS (2–3 Y, 4–5 Y, 6–7 Y, 8–9 Y) */}
-                  <div className="form-field full" style={{ background: "var(--bg2)", padding: "14px", borderRadius: "8px", border: "1px solid var(--border)" }}>
-                    <label className="form-label" style={{ fontWeight: 700, marginBottom: 8, display: "block" }}>
-                      Per-Size Stock Quantities & Cumulative Calculation:
-                    </label>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-                      {["2–3 Years", "4–5 Years", "6–7 Years", "8–9 Years"].map((sz) => (
-                        <div key={sz}>
-                          <label style={{ fontSize: 11, fontWeight: 700, display: "block", marginBottom: 4 }}>{sz}:</label>
-                          <input
-                            type="number"
-                            min="0"
-                            className="form-input"
-                            value={newKidsProd.sizeStock[sz] ?? 0}
-                            onChange={(e) =>
-                              setNewKidsProd({
-                                ...newKidsProd,
-                                sizeStock: { ...newKidsProd.sizeStock, [sz]: Math.max(0, parseInt(e.target.value) || 0) },
-                              })
-                            }
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ marginTop: 10, fontSize: 13, fontWeight: 700, color: "var(--accent)" }}>
-                      Total Cumulative Stock: {Object.values(newKidsProd.sizeStock).reduce((a, b) => a + (b || 0), 0)} units
-                    </div>
-                  </div>
-
-                  <div className="form-field full"><label className="form-label">Image URL *</label><input className="form-input" placeholder="Paste image link" value={newKidsProd.image} onChange={(e) => setNewKidsProd({ ...newKidsProd, image: e.target.value })} /></div>
-                  <div className="form-field full"><label className="form-label">Description</label><textarea className="form-input" placeholder="Kids outfit details" value={newKidsProd.description} onChange={(e) => setNewKidsProd({ ...newKidsProd, description: e.target.value })} /></div>
                 </div>
+
+                <div className="form-field"><label className="form-label">Image URL</label><input className="form-input" placeholder="https://..." value={newKidsProd.image} onChange={(e) => setNewKidsProd({ ...newKidsProd, image: e.target.value })} /></div>
+
+                <div style={{ marginTop: 16 }}>
+                  <label className="form-label">Per-Size Stock Setup (Kids Age Groups)</label>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+                    {["2–3 Years", "4–5 Years", "6–7 Years", "8–9 Years"].map((sz) => (
+                      <div key={sz} style={{ background: "var(--bg2)", padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)" }}>
+                        <label style={{ fontSize: 11, fontWeight: 700 }}>{sz}</label>
+                        <input
+                          type="number"
+                          min="0"
+                          className="form-input"
+                          value={newKidsProd.sizeStock[sz] ?? 0}
+                          onChange={(e) => setNewKidsProd({ ...newKidsProd, sizeStock: { ...newKidsProd.sizeStock, [sz]: parseInt(e.target.value) || 0 } })}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <button type="submit" className="admin-action-btn" style={{ background: "#1a1714", color: "#fff", padding: "12px 24px", marginTop: 14 }}>
                   Save Kids Product
                 </button>
               </form>
             )}
 
-            {/* KIDS CATALOG LIST */}
             <div className="admin-card">
               <div className="admin-card-title">🎈 Kids Catalog List</div>
               {kidsProducts.map((kp) => (
@@ -596,7 +643,6 @@ export function AdminPortal() {
                   </div>
                   <span style={{ fontSize: 14, fontWeight: 700 }}>₹{kp.basePrice}</span>
 
-                  {/* KIDS PER-SIZE STOCK EDITING */}
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {["2–3 Years", "4–5 Years", "6–7 Years", "8–9 Years"].map((sz) => {
                       const count = kp.sizeStock[sz] ?? 0;
@@ -611,9 +657,7 @@ export function AdminPortal() {
                             value={editValues[`k_${kp.id}_${sz}`] ?? count}
                             onChange={(e) => setEditValues({ ...editValues, [`k_${kp.id}_${sz}`]: e.target.value })}
                             onBlur={(e) => {
-                              if (e.target.value !== "") {
-                                updateKidsProductStock(kp, sz, e.target.value);
-                              }
+                              if (e.target.value !== "") updateKidsProductStock(kp, sz, e.target.value);
                             }}
                           />
                         </div>
@@ -624,6 +668,137 @@ export function AdminPortal() {
                   <button className="admin-del-btn" onClick={() => removeKidsProduct(kp.id)}><Icon.Trash /></button>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* MANUAL ORDERS SECTION */}
+        {currentSection === "orders" && (
+          <div>
+            <header className="admin-page-header">
+              <div className="admin-page-title-group">
+                <h1 className="admin-title">MANUAL ORDER DETAILS</h1>
+                <p className="admin-sub">Manual & automated order entries with payment status tracking</p>
+              </div>
+            </header>
+
+            {/* ADD MANUAL ORDER FORM */}
+            <div className="admin-form-header" onClick={() => setExpandOrderForm(!expandOrderForm)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
+              <span>{expandOrderForm ? "➖ HIDE ADD ORDER FORM" : "➕ ADD MANUAL ORDER"}</span>
+              <span>{expandOrderForm ? "▲" : "▼"}</span>
+            </div>
+
+            {expandOrderForm && (
+              <form className="admin-form-body" onSubmit={handleAddOrder}>
+                <div className="sale-form">
+                  <div className="form-field">
+                    <label className="form-label">Order ID (Starts with 'O')</label>
+                    <input
+                      className="form-input"
+                      placeholder="e.g. O-1001 (Leave blank to auto-generate)"
+                      value={newOrder.id}
+                      onChange={(e) => setNewOrder({ ...newOrder, id: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label className="form-label">Customer ID / Email *</label>
+                    <input
+                      className="form-input"
+                      type="email"
+                      placeholder="customer@example.com"
+                      value={newOrder.customerId}
+                      onChange={(e) => setNewOrder({ ...newOrder, customerId: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label className="form-label">Total Amount Paid / Due (INR) *</label>
+                    <input
+                      className="form-input"
+                      type="number"
+                      placeholder="e.g. 1499"
+                      value={newOrder.totalAmount}
+                      onChange={(e) => setNewOrder({ ...newOrder, totalAmount: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label className="form-label">Payment Status *</label>
+                    <select
+                      className="form-input"
+                      value={newOrder.status}
+                      onChange={(e) => setNewOrder({ ...newOrder, status: e.target.value })}
+                    >
+                      <option value="Paid">Paid</option>
+                      <option value="Not Paid">Not Paid</option>
+                    </select>
+                  </div>
+                </div>
+
+                <button type="submit" className="admin-action-btn" style={{ background: "#1a1714", color: "#fff", padding: "12px 24px", marginTop: 14 }}>
+                  Create Order Entry
+                </button>
+              </form>
+            )}
+
+            {/* ORDERS TABLE */}
+            <div className="admin-card">
+              <div className="admin-card-title">📋 Orders Directory ({orders.length} orders)</div>
+              {orders.length === 0 ? (
+                <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--text2)", fontSize: 14 }}>
+                  No orders recorded yet. Click "ADD MANUAL ORDER" above to create your first order entry.
+                </div>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ background: "var(--bg2)", borderBottom: "1.5px solid var(--border)", textAlign: "left" }}>
+                        <th style={{ padding: "12px 16px", fontWeight: 700 }}>Order ID</th>
+                        <th style={{ padding: "12px 16px", fontWeight: 700 }}>Customer ID / Email</th>
+                        <th style={{ padding: "12px 16px", fontWeight: 700 }}>Total Amount</th>
+                        <th style={{ padding: "12px 16px", fontWeight: 700 }}>Payment Status</th>
+                        <th style={{ padding: "12px 16px", fontWeight: 700, textAlign: "right" }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {orders.map((ord) => (
+                        <tr key={ord.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                          <td style={{ padding: "12px 16px", fontWeight: 700, color: "var(--accent)" }}>{ord.id}</td>
+                          <td style={{ padding: "12px 16px", fontWeight: 500 }}>{ord.customerId}</td>
+                          <td style={{ padding: "12px 16px", fontWeight: 700 }}>₹{ord.totalAmount}</td>
+                          <td style={{ padding: "12px 16px" }}>
+                            <select
+                              value={ord.status}
+                              onChange={(e) => handleUpdateOrderStatus(ord.id, e.target.value)}
+                              style={{
+                                padding: "6px 12px",
+                                borderRadius: 6,
+                                border: ord.status === "Paid" ? "1.5px solid #16a34a" : "1.5px solid #dc2626",
+                                background: ord.status === "Paid" ? "#dcfce7" : "#fee2e2",
+                                color: ord.status === "Paid" ? "#15803d" : "#991b1b",
+                                fontWeight: 700,
+                                fontSize: 12,
+                                cursor: "pointer",
+                              }}
+                            >
+                              <option value="Paid">Paid</option>
+                              <option value="Not Paid">Not Paid</option>
+                            </select>
+                          </td>
+                          <td style={{ padding: "12px 16px", textAlign: "right" }}>
+                            <button className="admin-del-btn" onClick={() => handleRemoveOrder(ord.id)}>
+                              <Icon.Trash />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}

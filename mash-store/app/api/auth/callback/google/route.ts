@@ -1,9 +1,11 @@
-// app/api/auth/callback/google/route.ts — Handles Google OAuth Callback
+// app/api/auth/callback/google/route.ts — Handles Google OAuth Callback & Customer DB logic
 import { NextResponse } from "next/server";
+import { findCustomerByEmail, createCustomer } from "@/lib/db";
 
 export async function GET(req: Request) {
   const { searchParams, origin } = new URL(req.url);
   const code = searchParams.get("code");
+  const intent = searchParams.get("state") || "login";
   const error = searchParams.get("error");
 
   if (error || !code) {
@@ -38,20 +40,42 @@ export async function GET(req: Request) {
       headers: { Authorization: `Bearer ${tokens.access_token}` },
     });
     const profile = await userRes.json();
+    const email = profile.email;
+    const name = profile.name || email.split("@")[0];
+    const image = profile.picture || "";
+
+    // 3. Check customer DB record
+    const existingCustomer = await findCustomerByEmail(email);
+
+    if (intent === "signup" && existingCustomer) {
+      // User clicked Sign Up but account already exists -> Redirect with account_exists error
+      return NextResponse.redirect(`${origin}/?oauth_error=account_exists`);
+    }
+
+    if (intent === "login" && !existingCustomer) {
+      // User clicked Log In but account does not exist -> Redirect with account_not_found error
+      return NextResponse.redirect(`${origin}/?oauth_error=account_not_found`);
+    }
+
+    // If new user signing up, create Customer in DB
+    if (!existingCustomer) {
+      await createCustomer(email, name, image);
+    }
 
     const userSession = {
-      name: profile.name || profile.email.split("@")[0],
-      email: profile.email,
-      image: profile.picture || "",
+      id: email, // Customer ID = Email
+      name: existingCustomer ? existingCustomer.name : name,
+      email,
+      image,
       provider: "google",
     };
 
-    // 3. Set HTTP-only cookie and redirect
+    // 4. Set HTTP cookie and redirect
     const res = NextResponse.redirect(`${origin}/?login_success=google`);
     res.cookies.set("mash_oauth_session", JSON.stringify(userSession), {
-      httpOnly: false, // Accessible to client-side JS for easy hydration
+      httpOnly: false,
       path: "/",
-      maxAge: 30 * 24 * 60 * 60, // 30 days
+      maxAge: 30 * 24 * 60 * 60,
       sameSite: "lax",
     });
 

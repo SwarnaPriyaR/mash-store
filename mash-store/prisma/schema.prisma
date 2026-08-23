@@ -37,3 +37,43 @@ model KidsProduct {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+model Customer {
+  id        String   @id // Customer ID = Email address
+  email     String   @unique
+  name      String
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CustomerCart {
+  id         Int      @id @default(autoincrement())
+  customerId String
+  productId  Int
+  qty        Int      @default(1)
+  size       String   @default("S")
+  isKids     Boolean  @default(false)
+  updatedAt  DateTime @updatedAt
+
+  @@unique([customerId, productId, size])
+}
+
+model CustomerWishlist {
+  id         Int      @id @default(autoincrement())
+  customerId String
+  productId  Int
+  isKids     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@unique([customerId, productId])
+}
+
+model Order {
+  id          String   @id // Order ID starts with 'O', e.g. O-1001
+  customerId  String
+  totalAmount Int
+  status      String   @default("Not Paid") // "Paid" | "Not Paid"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

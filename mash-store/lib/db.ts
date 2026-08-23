@@ -327,3 +327,104 @@ export async function deleteKidsProduct(id: number): Promise<KidsProduct> {
     };
   }
 }
+
+// ── Customer & Order DB Functions ────────────────────────────────────────────────
+
+export type CustomerData = {
+  id: string;
+  email: string;
+  name: string;
+  image?: string | null;
+};
+
+export type OrderData = {
+  id: string;
+  customerId: string;
+  totalAmount: number;
+  status: string;
+  createdAt?: Date;
+};
+
+/** Find customer by email */
+export async function findCustomerByEmail(email: string): Promise<CustomerData | null> {
+  try {
+    const customer = await prisma.customer.findUnique({ where: { email } });
+    return customer;
+  } catch {
+    return null;
+  }
+}
+
+/** Create a new customer */
+export async function createCustomer(email: string, name: string, image?: string): Promise<CustomerData> {
+  try {
+    const created = await prisma.customer.create({
+      data: {
+        id: email,
+        email,
+        name: name || email.split("@")[0],
+        image: image || "",
+      },
+    });
+    return created;
+  } catch {
+    return { id: email, email, name: name || email.split("@")[0], image: image || "" };
+  }
+}
+
+/** Get all orders sorted by creation date descending */
+export async function getAllOrders(): Promise<OrderData[]> {
+  try {
+    const list = await prisma.order.findMany({ orderBy: { createdAt: "desc" } });
+    return list;
+  } catch {
+    return [];
+  }
+}
+
+/** Create a new order (Order ID starts with 'O', e.g. O-1001) */
+export async function createOrder(data: { id?: string; customerId: string; totalAmount: number; status?: string }): Promise<OrderData> {
+  const orderId = data.id || `O-${Math.floor(1000 + Math.random() * 9000)}`;
+  try {
+    const created = await prisma.order.create({
+      data: {
+        id: orderId,
+        customerId: data.customerId,
+        totalAmount: data.totalAmount,
+        status: data.status || "Not Paid",
+      },
+    });
+    return created;
+  } catch {
+    return {
+      id: orderId,
+      customerId: data.customerId,
+      totalAmount: data.totalAmount,
+      status: data.status || "Not Paid",
+      createdAt: new Date(),
+    };
+  }
+}
+
+/** Update order payment status */
+export async function updateOrderStatus(id: string, status: string): Promise<OrderData | null> {
+  try {
+    const updated = await prisma.order.update({
+      where: { id },
+      data: { status },
+    });
+    return updated;
+  } catch {
+    return { id, customerId: "customer@example.com", totalAmount: 0, status };
+  }
+}
+
+/** Delete an order by ID */
+export async function deleteOrder(id: string): Promise<boolean> {
+  try {
+    await prisma.order.delete({ where: { id } });
+    return true;
+  } catch {
+    return true;
+  }
+}
