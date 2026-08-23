@@ -16,6 +16,7 @@ model Product {
   basePrice   Int
   qty         Int      @default(0)
   fit         String   @default("Regular")
+  category    String   @default("Men T-Shirt")
   image       String
   tags        String[] @default([])
   description String   @default("")

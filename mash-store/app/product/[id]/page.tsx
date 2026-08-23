@@ -1,11 +1,10 @@
-// app/product/[id]/page.tsx — Product Detail (Server Component)
-// Fetches product directly from Prisma — no HTTP request needed.
-
 import { notFound } from "next/navigation";
-import { getProductById } from "@/lib/db";
+import { getProductById, getAllProducts } from "@/lib/db";
 import { convertDriveUrl } from "@/lib/helpers";
 import { ProductDetailClient } from "./ProductDetailClient";
 import type { Metadata } from "next";
+
+export const dynamic = "force-dynamic";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -23,12 +22,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductDetailPage({ params }: Props) {
   const { id } = await params;
-  const product = await getProductById(parseInt(id));
+  const targetId = parseInt(id);
+  const product = await getProductById(targetId);
 
   if (!product) notFound();
 
-  // Normalize image URL server-side
+  const allProducts = await getAllProducts();
+
+  // Filter products of same category or fit excluding current product
+  const related = allProducts
+    .filter((p) => p.id !== targetId && (p.category === product.category || p.fit === product.fit))
+    .map((p) => ({ ...p, image: convertDriveUrl(p.image) }));
+
   const normalizedProduct = { ...product, image: convertDriveUrl(product.image), reviews: [] };
 
-  return <ProductDetailClient product={normalizedProduct} />;
+  return <ProductDetailClient product={normalizedProduct} relatedProducts={related} />;
 }

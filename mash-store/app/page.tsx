@@ -28,9 +28,22 @@ export default function HomePage() {
           Premium T-shirts crafted for those who refuse to blend in. Heavyweight
           cotton, bold graphics, zero compromise.
         </p>
-        <Link href="/products" className="cta-btn" style={{ textDecoration: "none" }}>
-          View Products →
-        </Link>
+        <div style={{ display: "flex", gap: "16px", justifyContent: "center", alignItems: "center", flexWrap: "wrap" }}>
+          <Link href="/products" className="cta-btn" style={{ textDecoration: "none" }}>
+            View Products →
+          </Link>
+          <Link
+            href="/kids"
+            className="cta-btn"
+            style={{
+              textDecoration: "none",
+              background: "linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)",
+              boxShadow: "0 4px 20px rgba(236,72,153,0.35)",
+            }}
+          >
+            Go Kids 🎈
+          </Link>
+        </div>
         <div className="hero-strips">
           {["Free Shipping Above ₹999", "100% Cotton", "6 Signature Styles"].map(
             (s) => (

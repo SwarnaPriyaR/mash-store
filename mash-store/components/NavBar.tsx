@@ -36,18 +36,28 @@ export function NavBar() {
       {isUpcomingSale && <SaleBanner sale={sale} type="upcoming" />}
 
       <nav className="nav" style={{ top: hasBanner ? 40 : 0 }}>
-        <Link href="/" className="nav-logo" style={{ display: "flex", alignItems: "center" }}>
-          <img
-            src={dark ? "/asset/logoDark.png" : "/asset/logoLight.png"}
-            alt="MASH"
-            style={{
-              height: 44,
-              width: "auto",
-              objectFit: "contain",
-              transition: "opacity 0.2s",
-            }}
-          />
-        </Link>
+        <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+          <Link href="/" className="nav-logo" style={{ display: "flex", alignItems: "center" }}>
+            <img
+              src={dark ? "/asset/logoDark.png" : "/asset/logoLight.png"}
+              alt="MASH"
+              style={{
+                height: 44,
+                width: "auto",
+                objectFit: "contain",
+                transition: "opacity 0.2s",
+              }}
+            />
+          </Link>
+          <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+            <Link href="/products" style={{ color: "var(--text)", textDecoration: "none", fontSize: 14, fontWeight: 600 }}>
+              All Drops
+            </Link>
+            <Link href="/kids" style={{ color: "#ec4899", textDecoration: "none", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
+              Kids 🎈
+            </Link>
+          </div>
+        </div>
         <div className="nav-right">
           <button className="icon-btn" onClick={() => setDark(!dark)} title="Toggle theme">
             {dark ? <Icon.Sun /> : <Icon.Moon />}

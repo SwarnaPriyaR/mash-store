@@ -14,6 +14,7 @@ export type Product = {
   basePrice: number;
   qty: number;
   fit: string;
+  category: string;
   image: string;
   tags: string[];
   description: string;
@@ -26,6 +27,7 @@ export type NewProductPayload = {
   basePrice: number;
   qty: number;
   fit: string;
+  category?: string;
   image: string;
   tags: string[];
   description: string;
@@ -35,6 +37,7 @@ export type UpdateProductPayload = Partial<{
   qty: number;
   basePrice: number;
   fit: string;
+  category: string;
   name: string;
   image: string;
   tags: string[];
@@ -48,6 +51,19 @@ export async function getAllProducts(): Promise<Product[]> {
   return prisma.product.findMany({ orderBy: { id: "asc" } });
 }
 
+/** Fetch products by category */
+export async function getProductsByCategory(category: string): Promise<Product[]> {
+  return prisma.product.findMany({
+    where: {
+      OR: [
+        { category: { equals: category, mode: "insensitive" } },
+        { tags: { has: category } },
+      ],
+    },
+    orderBy: { id: "asc" },
+  });
+}
+
 /** Fetch a single product by ID, returns null if not found */
 export async function getProductById(id: number): Promise<Product | null> {
   return prisma.product.findUnique({ where: { id } });
@@ -55,7 +71,12 @@ export async function getProductById(id: number): Promise<Product | null> {
 
 /** Create a new product */
 export async function createProduct(data: NewProductPayload): Promise<Product> {
-  return prisma.product.create({ data });
+  return prisma.product.create({
+    data: {
+      ...data,
+      category: data.category || "Men T-Shirt",
+    },
+  });
 }
 
 /** Partially update a product by ID */

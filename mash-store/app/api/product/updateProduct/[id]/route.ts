@@ -16,7 +16,7 @@ export async function PATCH(
     }
 
     const body = await req.json();
-    const { qty, basePrice, fit, name, image, tags, description } = body;
+    const { qty, basePrice, fit, category, name, image, tags, description } = body;
     const data: Record<string, unknown> = {};
 
     if (qty !== undefined) {
@@ -35,6 +35,7 @@ export async function PATCH(
       }
       data.fit = fit;
     }
+    if (category !== undefined) data.category = String(category).trim();
     if (name !== undefined) data.name = String(name).trim();
     if (image !== undefined) data.image = String(image).trim();
     if (tags !== undefined) data.tags = Array.isArray(tags) ? tags : [];

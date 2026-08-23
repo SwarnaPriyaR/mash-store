@@ -12,9 +12,10 @@ interface ProductWithReviews extends Product {
 
 interface Props {
   product: ProductWithReviews;
+  relatedProducts?: Product[];
 }
 
-export function ProductDetailClient({ product }: Props) {
+export function ProductDetailClient({ product, relatedProducts = [] }: Props) {
   const { addToCart, wishlist, toggleWishlist } = useCart();
   const { sale } = useSale();
 
@@ -45,6 +46,7 @@ export function ProductDetailClient({ product }: Props) {
               <span key={t} className="product-tag">{t}</span>
             ))}
             <span className="product-tag" style={{ background: "#4b5563" }}>{product.fit}</span>
+            {product.category && <span className="product-tag" style={{ background: "#ec4899", color: "#fff" }}>{product.category}</span>}
           </div>
           <h1 className="detail-name">{product.name}</h1>
           <div className="detail-price-row">
@@ -76,6 +78,60 @@ export function ProductDetailClient({ product }: Props) {
           </div>
         </div>
       </div>
+
+      {/* HORIZONTAL COLOR / STYLE VARIATIONS ROW */}
+      {relatedProducts.length > 0 && (
+        <div style={{ marginTop: 48, borderTop: "1px solid var(--border)", paddingTop: 32 }}>
+          <h3 style={{ fontFamily: "var(--font-bebas), 'Bebas Neue', sans-serif", fontSize: 28, letterSpacing: "0.04em", marginBottom: 16 }}>
+            MORE STYLES & COLOR VARIATIONS
+          </h3>
+          <div
+            style={{
+              display: "flex",
+              gap: 16,
+              overflowX: "auto",
+              paddingBottom: 16,
+              scrollbarWidth: "thin",
+            }}
+          >
+            {relatedProducts.map((rel) => {
+              const relPrice = isSaleOn ? Math.round(rel.basePrice * (1 - sale.discount / 100)) : rel.basePrice;
+              return (
+                <Link
+                  key={rel.id}
+                  href={`/product/${rel.id}`}
+                  style={{
+                    textDecoration: "none",
+                    color: "inherit",
+                    flex: "0 0 160px",
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 12,
+                    overflow: "hidden",
+                    transition: "transform 0.2s, box-shadow 0.2s",
+                  }}
+                >
+                  <img
+                    src={rel.image}
+                    alt={rel.name}
+                    style={{ width: "100%", aspectRatio: "4/5", objectFit: "cover", display: "block" }}
+                  />
+                  <div style={{ padding: "10px 12px" }}>
+                    <div style={{ fontWeight: 600, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {rel.name}
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--text2)", margin: "2px 0 6px" }}>{rel.fit}</div>
+                    <div style={{ fontFamily: "var(--font-bebas), 'Bebas Neue', sans-serif", fontSize: 18, color: "var(--accent)" }}>
+                      ₹{relPrice}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {product.reviews.length > 0 && (
         <div className="reviews-section">
           <h2 className="reviews-title">CUSTOMER REVIEWS</h2>

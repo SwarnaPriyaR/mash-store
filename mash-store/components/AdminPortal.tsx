@@ -34,7 +34,7 @@ export function AdminPortal() {
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [expandAddForm, setExpandAddForm] = useState(false);
   const [newProd, setNewProd] = useState({
-    name: "", price: "", qty: "", fit: "Regular", image: "", tags: "Graphic, Unisex",
+    name: "", price: "", qty: "", fit: "Regular", category: "Men T-Shirt", image: "", tags: "Graphic, Unisex",
     description: "Premium heavy cotton streetwear tee."
   });
   const [selectedImgTemplate, setSelectedImgTemplate] = useState("");
@@ -145,6 +145,7 @@ export function AdminPortal() {
       basePrice: baseP,
       qty: quantity,
       fit: newProd.fit,
+      category: newProd.category,
       image: convertDriveUrl(newProd.image.trim()) || templates[0],
       tags: newProd.tags.split(",").map((t) => t.trim()).filter(Boolean),
       description: newProd.description.trim() || "Premium quality T-shirt from MASH Store.",
@@ -163,7 +164,7 @@ export function AdminPortal() {
       const created: Product = await res.json();
       const finalPrice = isSaleActive ? Math.round(created.basePrice * (1 - sale.discount / 100)) : created.basePrice;
       setProducts((prev) => [...prev, { ...created, price: finalPrice, image: convertDriveUrl(created.image), reviews: [] }]);
-      setNewProd({ name: "", price: "", qty: "", fit: "Regular", image: "", tags: "Graphic, Unisex", description: "Premium heavy cotton streetwear tee." });
+      setNewProd({ name: "", price: "", qty: "", fit: "Regular", category: "Men T-Shirt", image: "", tags: "Graphic, Unisex", description: "Premium heavy cotton streetwear tee." });
       setSelectedImgTemplate("");
       setExpandAddForm(false);
       showToast(`🎉 "${created.name}" saved to Neon DB!`);
@@ -332,6 +333,7 @@ export function AdminPortal() {
                   <div className="form-field"><label className="form-label">Base Price (INR) *</label><input className="form-input" type="number" placeholder="e.g. 799" value={newProd.price} onChange={(e) => setNewProd({ ...newProd, price: e.target.value })} required /></div>
                   <div className="form-field"><label className="form-label">Stock Quantity *</label><input className="form-input" type="number" placeholder="e.g. 20" value={newProd.qty} onChange={(e) => setNewProd({ ...newProd, qty: e.target.value })} required /></div>
                   <div className="form-field"><label className="form-label">Fit Style</label><select className="admin-input" style={{ padding: "10px 14px", height: "43px" }} value={newProd.fit} onChange={(e) => setNewProd({ ...newProd, fit: e.target.value })}><option>Regular</option><option>Oversized</option></select></div>
+                  <div className="form-field"><label className="form-label">Category</label><select className="admin-input" style={{ padding: "10px 14px", height: "43px" }} value={newProd.category} onChange={(e) => setNewProd({ ...newProd, category: e.target.value })}><option>Men T-Shirt</option><option>Women T-Shirt</option><option>Kids Dress</option></select></div>
                   <div className="form-field full">
                     <label className="form-label">Image URL *</label>
                     <input className="form-input" placeholder="Select template below or paste custom image link" value={newProd.image} onChange={(e) => { setNewProd({ ...newProd, image: e.target.value }); setSelectedImgTemplate(""); }} />
@@ -355,13 +357,13 @@ export function AdminPortal() {
             )}
             <div className="admin-card">
               <div className="admin-card-title">📦 Product Catalog List</div>
-              <div style={{ display: "grid", gridTemplateColumns: "60px 1fr 100px 110px 110px 110px 48px", gap: 12, padding: "8px 16px", background: "var(--bg2)", borderRadius: "var(--radius-sm) var(--radius-sm) 0 0", borderBottom: "1px solid var(--border)" }}>
-                {["", "Product Details", "Qty", "Stock Adj.", "Base Price", "Fit", ""].map((h, i) => (
+              <div style={{ display: "grid", gridTemplateColumns: "60px 1fr 100px 110px 110px 110px 120px 48px", gap: 12, padding: "8px 16px", background: "var(--bg2)", borderRadius: "var(--radius-sm) var(--radius-sm) 0 0", borderBottom: "1px solid var(--border)" }}>
+                {["", "Product Details", "Qty", "Stock Adj.", "Base Price", "Fit", "Category", ""].map((h, i) => (
                   <span key={i} style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text2)" }}>{h}</span>
                 ))}
               </div>
               {products.map((p) => (
-                <div key={p.id} style={{ display: "grid", gridTemplateColumns: "60px 1fr 100px 110px 110px 110px 48px", gap: 12, alignItems: "center", padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
+                <div key={p.id} style={{ display: "grid", gridTemplateColumns: "60px 1fr 100px 110px 110px 110px 120px 48px", gap: 12, alignItems: "center", padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
                   <img src={p.image} alt={p.name} className="admin-thumb" />
                   <div><div className="admin-name">{p.name}</div><div className="admin-id">ID: {p.id}</div></div>
                   <span className={`admin-qty-badge ${p.qty === 0 ? "qty-out" : p.qty <= 5 ? "qty-low" : "qty-ok"}`}>{p.qty}</span>
@@ -373,6 +375,9 @@ export function AdminPortal() {
                     onBlur={(e) => { if (e.target.value !== "") { updateProduct(p.id, "basePrice", e.target.value); setEditValues({ ...editValues, [`price_${p.id}`]: "" }); showToast(`Base price updated for ${p.name}`); } }} />
                   <select className="admin-input" value={p.fit} onChange={(e) => { updateProduct(p.id, "fit", e.target.value); showToast(`Fit updated for ${p.name}`); }}>
                     <option>Regular</option><option>Oversized</option>
+                  </select>
+                  <select className="admin-input" value={p.category || "Men T-Shirt"} onChange={(e) => { updateProduct(p.id, "category", e.target.value); showToast(`Category updated for ${p.name}`); }}>
+                    <option>Men T-Shirt</option><option>Women T-Shirt</option><option>Kids Dress</option>
                   </select>
                   <button className="admin-del-btn" onClick={() => removeProduct(p.id)} title="Delete product"><Icon.Trash /></button>
                 </div>

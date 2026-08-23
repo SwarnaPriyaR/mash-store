@@ -8,7 +8,7 @@ import { convertDriveUrl } from "@/lib/helpers";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, basePrice, qty, fit, image, tags, description } = body;
+    const { name, basePrice, qty, fit, category, image, tags, description } = body;
 
     // Validation
     if (!name || typeof name !== "string" || !name.trim()) {
@@ -31,6 +31,7 @@ export async function POST(req: Request) {
       basePrice: parsedPrice,
       qty: parsedQty,
       fit: fit || "Regular",
+      category: category || "Men T-Shirt",
       image: convertDriveUrl(image.trim()),
       tags: Array.isArray(tags) ? tags : [],
       description: typeof description === "string" ? description.trim() : "",

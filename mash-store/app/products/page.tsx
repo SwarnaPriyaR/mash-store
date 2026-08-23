@@ -18,6 +18,7 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<(Product & { price: number })[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState("All");
   const [fitFilter, setFitFilter] = useState("All");
 
   useEffect(() => {
@@ -50,8 +51,18 @@ export default function ProductsPage() {
     );
   }, [sale]);
 
+  const categories = ["All", "Men T-Shirt", "Women T-Shirt", "Kids Dress"];
   const fits = ["All", "Regular", "Oversized"];
-  const filtered = fitFilter === "All" ? products : products.filter((p) => p.fit === fitFilter);
+
+  const filtered = products.filter((p) => {
+    const matchCategory =
+      categoryFilter === "All" ||
+      p.category?.toLowerCase() === categoryFilter.toLowerCase() ||
+      p.tags?.some((t) => t.toLowerCase() === categoryFilter.toLowerCase());
+    const matchFit = fitFilter === "All" || p.fit === fitFilter;
+    return matchCategory && matchFit;
+  });
+
   const isSaleOn = sale.active && Date.now() >= sale.start && Date.now() <= sale.end;
 
   if (loading) {
@@ -79,16 +90,34 @@ export default function ProductsPage() {
           {filtered.length} style{filtered.length !== 1 ? "s" : ""} shown
         </p>
       </div>
-      <div className="fit-filter">
-        {fits.map((f) => (
-          <button
-            key={f}
-            className={`fit-chip ${fitFilter === f ? "active" : ""}`}
-            onClick={() => setFitFilter(f)}
-          >
-            {f}
-          </button>
-        ))}
+
+      {/* Category & Fit Filters */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
+        <div className="fit-filter" style={{ marginBottom: 0 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, alignSelf: "center", marginRight: 8, color: "var(--text2)" }}>Category:</span>
+          {categories.map((c) => (
+            <button
+              key={c}
+              className={`fit-chip ${categoryFilter === c ? "active" : ""}`}
+              onClick={() => setCategoryFilter(c)}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+
+        <div className="fit-filter" style={{ marginBottom: 0 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, alignSelf: "center", marginRight: 8, color: "var(--text2)" }}>Fit:</span>
+          {fits.map((f) => (
+            <button
+              key={f}
+              className={`fit-chip ${fitFilter === f ? "active" : ""}`}
+              onClick={() => setFitFilter(f)}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="product-grid">
         {filtered.map((p) => {
