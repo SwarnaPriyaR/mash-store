@@ -174,7 +174,32 @@ export async function getAllProducts(): Promise<Product[]> {
   try {
     return await prisma.product.findMany({ orderBy: { id: "asc" } });
   } catch {
-    return [];
+    try {
+      // Fallback for legacy DB schema before `npx prisma db push`:
+      // Select legacy columns only to prevent SQL missing-column error
+      const legacyList = await prisma.product.findMany({
+        select: {
+          id: true,
+          name: true,
+          basePrice: true,
+          qty: true,
+          fit: true,
+          image: true,
+          tags: true,
+          description: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { id: "asc" },
+      });
+      return legacyList.map((p) => ({
+        ...p,
+        category: p.tags?.some((t) => t.toLowerCase().includes("women")) ? "Women T-Shirt" : "Men T-Shirt",
+        sizes: ["S", "M", "L", "XL"],
+      }));
+    } catch {
+      return [];
+    }
   }
 }
 
