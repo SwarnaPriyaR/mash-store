@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "MASH KIDS — Cute & Playful Kids Fashion",
+  title: "Cute & Playful Kids Fashion",
   description: "Adorable, soft, and vibrant kids clothing & dresses crafted for ages 2–9 Years.",
 };
 

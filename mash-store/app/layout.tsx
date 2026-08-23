@@ -23,10 +23,10 @@ const dmSans = DM_Sans({
 export const metadata: Metadata = {
   title: {
     default: "MASH Store — Wear Your Attitude",
-    template: "%s | MASH Store",
+    template: "MASH Store | %s",
   },
   description:
-    "Premium T-shirts crafted for those who refuse to blend in. Heavyweight cotton, bold graphics, zero compromise.",
+    "Premium T-shirts crafted for those who refuse to blend in",
   keywords: ["MASH", "streetwear", "t-shirts", "premium cotton", "oversized tees"],
   icons: {
     icon: "/asset/mashLogo.png",

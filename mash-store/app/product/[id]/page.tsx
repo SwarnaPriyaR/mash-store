@@ -15,8 +15,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const product = await getProductById(parseInt(id));
   if (!product) return { title: "Product Not Found — MASH Store" };
   return {
-    title: `${product.name} — MASH Store`,
-    description: product.description || `${product.name} — ${product.fit} fit premium streetwear tee`,
+    title: `${product.name}`,
+    description: `${product.name} — ${product.fit} fit premium`,
   };
 }
 
