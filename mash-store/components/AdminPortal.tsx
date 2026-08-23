@@ -170,11 +170,11 @@ export function AdminPortal() {
   // ── Login screen ──
   if (!authed) {
     const handleLoginSubmit = () => {
-      const expectedPass = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+      const expectedPass = process.env.ADMIN_PASSWORD;
       // Fallback: allow any password check against a client-visible env var.
       // NOTE: For production, use a server action or API route for real auth.
       if (!expectedPass) {
-        showToast("⚠️ NEXT_PUBLIC_ADMIN_PASSWORD not set in environment.");
+        showToast("⚠️ ADMIN_PASSWORD not set in environment.");
         return;
       }
       if (adminPass === expectedPass) {
