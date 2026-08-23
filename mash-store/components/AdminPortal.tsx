@@ -711,7 +711,7 @@ export function AdminPortal() {
                 }}
               >
                 <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  💰 Cumulative Total Paid Amount
+                  💰 Total Paid Amount
                 </div>
                 <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4 }}>
                   ₹{cumulativeTotalPaid.toLocaleString("en-IN")}
@@ -731,7 +731,7 @@ export function AdminPortal() {
                 }}
               >
                 <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  ⏳ Cumulative Total Non-Paid Amount
+                  ⏳ Total Non-Paid Amount
                 </div>
                 <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4 }}>
                   ₹{cumulativeTotalNonPaid.toLocaleString("en-IN")}
@@ -833,6 +833,7 @@ export function AdminPortal() {
                       <tr style={{ background: "var(--bg2)", borderBottom: "1.5px solid var(--border)", textAlign: "left" }}>
                         <th style={{ padding: "12px 16px", fontWeight: 700 }}>Order ID</th>
                         <th style={{ padding: "12px 16px", fontWeight: 700 }}>Customer ID / Email</th>
+                        <th style={{ padding: "12px 16px", fontWeight: 700 }}>Date</th>
                         <th style={{ padding: "12px 16px", fontWeight: 700 }}>Total Amount</th>
                         <th style={{ padding: "12px 16px", fontWeight: 700 }}>Payment Status</th>
                         <th style={{ padding: "12px 16px", fontWeight: 700 }}>Order Status</th>
@@ -844,6 +845,9 @@ export function AdminPortal() {
                         <tr key={ord.id} style={{ borderBottom: "1px solid var(--border)" }}>
                           <td style={{ padding: "12px 16px", fontWeight: 700, color: "var(--accent)" }}>{ord.id}</td>
                           <td style={{ padding: "12px 16px", fontWeight: 500 }}>{ord.customerId}</td>
+                          <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--text2)" }}>
+                            {ord.createdAt ? new Date(ord.createdAt).toLocaleDateString("en-IN") : "Today"}
+                          </td>
                           <td style={{ padding: "12px 16px", fontWeight: 700 }}>₹{ord.totalAmount}</td>
 
                           {/* PAYMENT STATUS DROPDOWN */}

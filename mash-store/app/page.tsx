@@ -1,8 +1,7 @@
 // app/page.tsx — Home Page (Server Component)
-// No HTTP fetch, no useEffect — pure JSX rendered on the server.
 
 import Link from "next/link";
-import { Icon } from "@/components/Icon";
+import { HomePageClient } from "./HomePageClient";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -14,6 +13,7 @@ export const metadata: Metadata = {
 export default function HomePage() {
   return (
     <div className="hero" style={{ paddingTop: 64 }}>
+      <HomePageClient />
       <div className="hero-bg-text">MASH</div>
       <div className="hero-content">
         <div className="hero-eyebrow">

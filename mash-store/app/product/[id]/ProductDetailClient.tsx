@@ -28,9 +28,41 @@ export function ProductDetailClient({ product, relatedProducts = [] }: Props) {
 
   return (
     <div className="detail-page" style={{ paddingTop: 96 }}>
-      <Link href="/products" className="detail-back" style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--text2)", textDecoration: "none" }}>
+      <Link href="/products" className="detail-back" style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--text2)", textDecoration: "none", marginBottom: 16 }}>
         <Icon.ArrowLeft /> Back to Products
       </Link>
+
+      {/* UNDER CONSTRUCTION BANNER */}
+      <div
+        style={{
+          background: "#fef08a",
+          border: "1.5px solid #eab308",
+          borderRadius: 12,
+          padding: "12px 18px",
+          marginBottom: 24,
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          color: "#713f12",
+        }}
+      >
+        <div style={{ width: 28, height: 28, flexShrink: 0 }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 2L2 22h20L12 2z" />
+            <path d="M12 9v5" />
+            <path d="M12 17h.01" />
+          </svg>
+        </div>
+        <div>
+          <span style={{ fontWeight: 800, fontSize: 12, letterSpacing: "0.06em", textTransform: "uppercase", background: "#eab308", color: "#ffffff", padding: "2px 8px", borderRadius: 4, marginRight: 8 }}>
+            🚧 UNDER CONSTRUCTION
+          </span>
+          <span style={{ fontSize: 13, fontWeight: 600 }}>
+            Enhanced 3D view & custom fit preview are currently under construction. Basic product ordering remains fully functional below!
+          </span>
+        </div>
+      </div>
+
       <div className="detail-grid">
         <div className="detail-img-wrap">
           <img src={product.image} alt={product.name} className="detail-img" />
@@ -129,25 +161,6 @@ export function ProductDetailClient({ product, relatedProducts = [] }: Props) {
               );
             })}
           </div>
-        </div>
-      )}
-
-      {product.reviews.length > 0 && (
-        <div className="reviews-section">
-          <h2 className="reviews-title">CUSTOMER REVIEWS</h2>
-          {product.reviews.map((r, i) => (
-            <div className="review-card" key={i}>
-              <div className="review-header">
-                <span className="review-user">{r.user}</span>
-                <div className="review-stars">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Icon.Star key={s} filled={s <= r.rating} />
-                  ))}
-                </div>
-              </div>
-              <p className="review-text">{r.text}</p>
-            </div>
-          ))}
         </div>
       )}
     </div>
