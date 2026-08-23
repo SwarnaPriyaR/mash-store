@@ -17,12 +17,18 @@ type AdminProduct = Product & { price: number; reviews: unknown[] };
 
 export function AdminPortal() {
   const { sale, setSale } = useSale();
-  const [authed, setAuthed] = useState(() =>
-    typeof window !== "undefined" && sessionStorage.getItem("admin_authed") === "true"
-  );
+  const [mounted, setMounted] = useState(false);
+  const [authed, setAuthed] = useState(false);
   const [adminPass, setAdminPass] = useState("");
   const [toast, setToastMsg] = useState<string | null>(null);
   const [currentSection, setCurrentSection] = useState("dashboard");
+
+  useEffect(() => {
+    setMounted(true);
+    if (typeof window !== "undefined" && sessionStorage.getItem("admin_authed") === "true") {
+      setAuthed(true);
+    }
+  }, []);
 
   // Product state
   const [products, setProducts] = useState<AdminProduct[]>([]);
@@ -166,6 +172,8 @@ export function AdminPortal() {
       showToast(`❌ Could not add product: ${String(err)}`);
     }
   }, [newProd, isSaleActive, sale.discount, templates, showToast]);
+
+  if (!mounted) return null;
 
   // ── Login screen ──
   if (!authed) {

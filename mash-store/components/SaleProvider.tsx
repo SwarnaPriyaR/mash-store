@@ -17,14 +17,18 @@ interface SaleContextValue {
 const SaleContext = createContext<SaleContextValue | null>(null);
 
 export function SaleProvider({ children }: { children: ReactNode }) {
-  const [sale, setSaleState] = useState<SaleState>(() => {
-    if (typeof window === "undefined") return DEFAULT_SALE;
+  const [sale, setSaleState] = useState<SaleState>(DEFAULT_SALE);
+
+  useEffect(() => {
     const saved = localStorage.getItem("mash_sale");
     if (saved) {
-      try { return JSON.parse(saved) as SaleState; } catch { /* ignore */ }
+      try {
+        setSaleState(JSON.parse(saved) as SaleState);
+      } catch {
+        /* ignore */
+      }
     }
-    return DEFAULT_SALE;
-  });
+  }, []);
 
   const setSale = useCallback((s: SaleState) => {
     setSaleState(s);
