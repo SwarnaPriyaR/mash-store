@@ -172,22 +172,19 @@ export const DEFAULT_ADULT_PRODUCTS: Product[] = [
 /** Fetch all standard products sorted by ID ascending */
 export async function getAllProducts(): Promise<Product[]> {
   try {
-    const list = await prisma.product.findMany({ orderBy: { id: "asc" } });
-    if (list.length > 0) return list;
-    return DEFAULT_ADULT_PRODUCTS;
+    return await prisma.product.findMany({ orderBy: { id: "asc" } });
   } catch {
-    return DEFAULT_ADULT_PRODUCTS;
+    return [];
   }
 }
 
-/** Fetch all kids products from KidsProduct table with fail-safe fallback */
+/** Fetch all kids products from KidsProduct table */
 export async function getAllKidsProducts(): Promise<KidsProduct[]> {
   try {
     const list = await prisma.kidsProduct.findMany({ orderBy: { id: "asc" } });
-    if (list.length > 0) return list as unknown as KidsProduct[];
-    return DEFAULT_KIDS_PRODUCTS;
+    return list as unknown as KidsProduct[];
   } catch {
-    return DEFAULT_KIDS_PRODUCTS;
+    return [];
   }
 }
 
@@ -204,13 +201,7 @@ export async function getProductsByCategory(category: string): Promise<Product[]
       orderBy: { id: "asc" },
     });
   } catch {
-    const catLower = category.toLowerCase();
-    return DEFAULT_ADULT_PRODUCTS.filter((p) => {
-      const pCat = p.category?.toLowerCase();
-      if (pCat && pCat === catLower) return true;
-      if (p.tags && p.tags.some((t) => t.toLowerCase() === catLower)) return true;
-      return false;
-    });
+    return [];
   }
 }
 

@@ -37,14 +37,7 @@ export function NavBar() {
       {isSaleActive && <SaleBanner sale={sale} type="active" />}
       {isUpcomingSale && <SaleBanner sale={sale} type="upcoming" />}
 
-      <nav
-        className="nav"
-        style={{
-          top: hasBanner ? 40 : 0,
-          background: isKidsPage ? "#fcc3c3" : undefined,
-          borderBottom: isKidsPage ? "2px solid #f6a2a2" : undefined,
-        }}
-      >
+      <nav className="nav" style={{ top: hasBanner ? 40 : 0 }}>
         <Link href="/" className="nav-logo" style={{ display: "flex", alignItems: "center" }}>
           <img
             src={dark ? "/asset/logoDark.png" : "/asset/logoLight.png"}

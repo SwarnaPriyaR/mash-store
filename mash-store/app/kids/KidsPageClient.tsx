@@ -42,65 +42,57 @@ export function KidsPageClient({ initialProducts }: Props) {
   return (
     <div
       style={{
-        background: "#99c8ec",
+        background: "var(--bg)",
+        color: "var(--text)",
         minHeight: "100vh",
         paddingTop: 88,
         paddingBottom: 64,
         fontFamily: "'Lato', 'Open Sans', 'DM Sans', sans-serif",
+        transition: "background-color 0.3s, color 0.3s",
       }}
     >
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
-        {/* FLOATING HEADER & FILTERS */}
+        {/* HEADER SECTION IN GLOBAL THEME */}
         <div style={{ marginBottom: 28 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
             <div>
-              {/* BRAND LOGO: Custom Brand Display Style */}
-              <div
-                style={{
-                  fontFamily: "var(--font-bebas), 'Bebas Neue', cursive, sans-serif",
-                  fontSize: 28,
-                  letterSpacing: "0.08em",
-                  color: "#1a1714",
-                  fontStyle: "italic",
-                }}
-              >
-                HOPSCOTCH · MASH KIDS
-              </div>
-
-              {/* MAIN PAGE TITLE: Semi-Bold / Regular ~24px */}
               <h1
                 style={{
-                  fontFamily: "'Lato', 'Open Sans', sans-serif",
-                  fontSize: 24,
-                  fontWeight: 600,
-                  color: "#1a1714",
-                  margin: "4px 0 0 0",
+                  fontFamily: "var(--font-bebas), 'Bebas Neue', sans-serif",
+                  fontSize: 36,
+                  fontWeight: 700,
+                  color: "var(--text)",
+                  margin: 0,
+                  letterSpacing: "0.04em",
                 }}
               >
-                Baby & Kids Clothing
+                MASH KIDS
               </h1>
+              <p style={{ margin: "4px 0 0 0", color: "var(--text2)", fontSize: 14, fontWeight: 500 }}>
+                Showing {filtered.length} styles for kids
+              </p>
             </div>
 
             <div
               style={{
                 fontSize: 13,
                 fontWeight: 600,
-                background: "#f6b8c1",
-                color: "#1a1714",
+                background: "var(--bg2)",
+                color: "var(--text)",
+                border: "1px solid var(--border)",
                 padding: "8px 16px",
                 borderRadius: 99,
-                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
               }}
             >
               🚚 Free Shipping on orders above ₹999
             </div>
           </div>
 
-          {/* FLOATING FILTERS (NO BOX CONTAINER) */}
+          {/* FLOATING FILTERS IN GLOBAL THEME */}
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {/* AGE / SIZE FILTER */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: "#1a1714", minWidth: 90, textTransform: "uppercase" }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", minWidth: 90, textTransform: "uppercase" }}>
                 Age / Size:
               </span>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -112,12 +104,13 @@ export function KidsPageClient({ initialProducts }: Props) {
                     style={{
                       padding: "6px 14px",
                       borderRadius: 99,
-                      border: selectedAge === age ? "2px solid #1a1714" : "1.5px solid #ffffff",
-                      background: selectedAge === age ? "#1a1714" : "#ffffff",
-                      color: selectedAge === age ? "#ffffff" : "#1a1714",
+                      border: selectedAge === age ? "1.5px solid var(--accent)" : "1px solid var(--border)",
+                      background: selectedAge === age ? "var(--accent)" : "var(--bg2)",
+                      color: selectedAge === age ? "#ffffff" : "var(--text)",
                       fontSize: 13,
                       fontWeight: 600,
                       cursor: "pointer",
+                      transition: "all 0.15s",
                     }}
                   >
                     {age}
@@ -128,7 +121,7 @@ export function KidsPageClient({ initialProducts }: Props) {
 
             {/* GENDER FILTER */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: "#1a1714", minWidth: 90, textTransform: "uppercase" }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", minWidth: 90, textTransform: "uppercase" }}>
                 Gender:
               </span>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -140,15 +133,16 @@ export function KidsPageClient({ initialProducts }: Props) {
                     style={{
                       padding: "6px 14px",
                       borderRadius: 99,
-                      border: selectedGender === gen ? "2px solid #1a1714" : "1.5px solid #ffffff",
-                      background: selectedGender === gen ? "#1a1714" : "#f6b8c1",
-                      color: selectedGender === gen ? "#ffffff" : "#1a1714",
+                      border: selectedGender === gen ? "1.5px solid var(--accent)" : "1px solid var(--border)",
+                      background: selectedGender === gen ? "var(--accent)" : "var(--bg2)",
+                      color: selectedGender === gen ? "#ffffff" : "var(--text)",
                       fontSize: 13,
                       fontWeight: 600,
                       cursor: "pointer",
+                      transition: "all 0.15s",
                     }}
                   >
-                    {gen === "Girls" ? "🎀 Girls" : gen === "Boys" ? "🧢 Boys" : gen === "Unisex" ? "✨ Unisex" : "All"}
+                    {gen === "Girls" ? "Girls" : gen === "Boys" ? "Boys" : gen === "Unisex" ? "Unisex" : "All"}
                   </button>
                 ))}
               </div>
@@ -156,14 +150,15 @@ export function KidsPageClient({ initialProducts }: Props) {
           </div>
         </div>
 
-        {/* PRODUCTS GRID */}
+        {/* PRODUCTS GRID IN GLOBAL THEME */}
         {filtered.length === 0 ? (
-          <div style={{ background: "#ffffff", padding: "48px 24px", borderRadius: 20, textAlign: "center" }}>
-            <h3 style={{ fontSize: 18, fontWeight: 600, color: "#1a1714" }}>No products match your selected filter</h3>
+          <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", padding: "48px 24px", borderRadius: 16, textAlign: "center" }}>
+            <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)" }}>No products available</h3>
+            <p style={{ color: "var(--text2)", fontSize: 14 }}>Add kids products from the Admin Portal to showcase them here.</p>
             <button
               type="button"
               onClick={() => { setSelectedAge("All"); setSelectedGender("All"); setSelectedCategory("All"); }}
-              style={{ padding: "10px 20px", background: "#1a1714", color: "#fff", borderRadius: 99, border: "none", fontWeight: 600, marginTop: 12, cursor: "pointer" }}
+              style={{ padding: "10px 20px", background: "var(--accent)", color: "#fff", borderRadius: 99, border: "none", fontWeight: 600, marginTop: 12, cursor: "pointer" }}
             >
               Clear Filters
             </button>
@@ -171,47 +166,47 @@ export function KidsPageClient({ initialProducts }: Props) {
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 20 }}>
             {filtered.map((p) => {
-              const discountPercent = isSaleOn ? sale.discount : 25; // Default 25% discount for visual appeal if sale inactive
-              const originalPrice = p.basePrice;
-              const price = Math.round(originalPrice * (1 - discountPercent / 100));
+              const price = isSaleOn ? Math.round(p.basePrice * (1 - sale.discount / 100)) : p.basePrice;
+              const onSale = isSaleOn && price < p.basePrice;
               const currentSize = selectedSizes[p.id] || p.sizes?.[0] || "2–3 Years";
 
               return (
                 <div
                   key={p.id}
                   style={{
-                    background: "#ffffff",
+                    background: "var(--card-bg, var(--bg2))",
+                    border: "1px solid var(--border)",
                     borderRadius: 16,
                     overflow: "hidden",
-                    boxShadow: "0 4px 14px rgba(0,0,0,0.06)",
+                    boxShadow: "0 4px 14px rgba(0,0,0,0.04)",
                     display: "flex",
                     flexDirection: "column",
                   }}
                 >
-                  <div style={{ position: "relative", aspectRatio: "4/5", background: "#f7fafc", overflow: "hidden" }}>
+                  <div style={{ position: "relative", aspectRatio: "4/5", background: "var(--bg2)", overflow: "hidden" }}>
                     <img
                       src={p.image}
                       alt={p.name}
                       style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                     />
 
-                    {/* DISCOUNT PERCENTAGE: Regular / Medium, Green Accent Color */}
-                    <span
-                      style={{
-                        position: "absolute",
-                        top: 10,
-                        left: 10,
-                        background: "#ffffff",
-                        color: "#16a34a",
-                        fontWeight: 600,
-                        fontSize: 12,
-                        padding: "4px 10px",
-                        borderRadius: 99,
-                        boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
-                      }}
-                    >
-                      {discountPercent}% OFF
-                    </span>
+                    {onSale && (
+                      <span
+                        style={{
+                          position: "absolute",
+                          top: 10,
+                          left: 10,
+                          background: "#e53e3e",
+                          color: "#ffffff",
+                          fontWeight: 600,
+                          fontSize: 12,
+                          padding: "4px 10px",
+                          borderRadius: 99,
+                        }}
+                      >
+                        {sale.discount}% OFF
+                      </span>
+                    )}
 
                     <button
                       type="button"
@@ -220,9 +215,9 @@ export function KidsPageClient({ initialProducts }: Props) {
                         position: "absolute",
                         top: 10,
                         right: 10,
-                        background: "rgba(255,255,255,0.9)",
-                        border: "none",
-                        color: wishlist.includes(p.id) ? "#e53e3e" : "#888",
+                        background: "var(--bg)",
+                        border: "1px solid var(--border)",
+                        color: wishlist.includes(p.id) ? "#e53e3e" : "var(--text2)",
                         borderRadius: 99,
                         width: 34,
                         height: 34,
@@ -237,13 +232,11 @@ export function KidsPageClient({ initialProducts }: Props) {
                   {/* PRODUCT CARD BODY */}
                   <div style={{ padding: "14px 16px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                     <div>
-                      {/* PRODUCT TITLES: Primary Sans-Serif, Regular / Medium ~14px */}
                       <h3
                         style={{
-                          fontFamily: "'Lato', 'Open Sans', sans-serif",
                           fontSize: 14,
-                          fontWeight: 500,
-                          color: "#2d3748",
+                          fontWeight: 600,
+                          color: "var(--text)",
                           margin: "0 0 8px 0",
                           lineHeight: 1.35,
                         }}
@@ -261,9 +254,9 @@ export function KidsPageClient({ initialProducts }: Props) {
                             style={{
                               padding: "3px 8px",
                               borderRadius: 6,
-                              border: currentSize === sz ? "1.5px solid #1a1714" : "1px solid #e2e8f0",
-                              background: currentSize === sz ? "#1a1714" : "#f7fafc",
-                              color: currentSize === sz ? "#ffffff" : "#4a5568",
+                              border: currentSize === sz ? "1.5px solid var(--accent)" : "1px solid var(--border)",
+                              background: currentSize === sz ? "var(--accent)" : "var(--bg)",
+                              color: currentSize === sz ? "#ffffff" : "var(--text2)",
                               fontSize: 11,
                               fontWeight: 500,
                               cursor: "pointer",
@@ -278,42 +271,28 @@ export function KidsPageClient({ initialProducts }: Props) {
                     {/* PRICING ROW */}
                     <div>
                       <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-                        {/* DISCOUNTED PRICE: Bold, Dark/Primary Color */}
                         <span
                           style={{
-                            fontFamily: "'Lato', 'Open Sans', sans-serif",
                             fontSize: 18,
                             fontWeight: 700,
-                            color: "#1a1714",
+                            color: "var(--text)",
                           }}
                         >
                           ₹{price}
                         </span>
 
-                        {/* ORIGINAL PRICE: Light / Regular, Strikethrough, Muted Gray */}
-                        <span
-                          style={{
-                            fontFamily: "'Lato', 'Open Sans', sans-serif",
-                            fontSize: 13,
-                            fontWeight: 400,
-                            textDecoration: "line-through",
-                            color: "#718096",
-                          }}
-                        >
-                          ₹{originalPrice}
-                        </span>
-
-                        {/* DISCOUNT PERCENTAGE: Green Accent */}
-                        <span
-                          style={{
-                            fontFamily: "'Lato', 'Open Sans', sans-serif",
-                            fontSize: 12,
-                            fontWeight: 500,
-                            color: "#16a34a",
-                          }}
-                        >
-                          ({discountPercent}% off)
-                        </span>
+                        {onSale && (
+                          <span
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 400,
+                              textDecoration: "line-through",
+                              color: "var(--text2)",
+                            }}
+                          >
+                            ₹{p.basePrice}
+                          </span>
+                        )}
                       </div>
 
                       <button
@@ -331,8 +310,8 @@ export function KidsPageClient({ initialProducts }: Props) {
                           padding: "8px 14px",
                           borderRadius: 8,
                           border: "none",
-                          background: "#1a1714",
-                          color: "#ffffff",
+                          background: "var(--text)",
+                          color: "var(--bg)",
                           fontWeight: 600,
                           fontSize: 13,
                           cursor: "pointer",
