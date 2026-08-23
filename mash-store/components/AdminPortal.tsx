@@ -3,7 +3,7 @@
 /**
  * components/AdminPortal.tsx
  * Admin management portal for Adult Products, Kids Products, and Manual Orders.
- * Includes category dropdowns, per-size stock management, and Manual Order Management.
+ * Includes category dropdowns, per-size stock management, Order Status dropdowns, and cumulative amounts.
  */
 
 import React, { useState, useCallback, useEffect } from "react";
@@ -66,12 +66,10 @@ export function AdminPortal() {
     customerId: "",
     totalAmount: "",
     status: "Not Paid",
+    orderStatus: "Order Received",
   });
 
   const [editValues, setEditValues] = useState<Record<string, string>>({});
-
-  // Sale form state
-  const [saleForm, setSaleForm] = useState({ discount: 15, durationHours: 24, startTime: "", mode: "scheduled" });
 
   const showToast = useCallback((msg: string) => {
     setToastMsg(msg);
@@ -147,6 +145,20 @@ export function AdminPortal() {
       showToast("❌ Incorrect Password");
     }
   };
+
+  // Dashboard Stats Calculations
+  const now = Date.now();
+  const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+  const ordersThisWeek = orders.filter((o) => {
+    const createdTime = o.createdAt ? new Date(o.createdAt).getTime() : now;
+    return now - createdTime <= oneWeekMs;
+  }).length;
+
+  const paidOrdersCount = orders.filter((o) => o.status === "Paid").length;
+  const nonPaidOrdersCount = orders.filter((o) => o.status === "Not Paid").length;
+
+  const cumulativeTotalPaid = orders.filter((o) => o.status === "Paid").reduce((acc, o) => acc + o.totalAmount, 0);
+  const cumulativeTotalNonPaid = orders.filter((o) => o.status === "Not Paid").reduce((acc, o) => acc + o.totalAmount, 0);
 
   // Adult Product Handlers
   const handleAddProduct = useCallback(async (e: React.FormEvent) => {
@@ -350,12 +362,13 @@ export function AdminPortal() {
           customerId: newOrder.customerId.trim(),
           totalAmount: amount,
           status: newOrder.status,
+          orderStatus: newOrder.orderStatus,
         }),
       });
       if (!res.ok) throw new Error("Failed to create order");
       const created: OrderData = await res.json();
       setOrders((prev) => [created, ...prev]);
-      setNewOrder({ id: "", customerId: "", totalAmount: "", status: "Not Paid" });
+      setNewOrder({ id: "", customerId: "", totalAmount: "", status: "Not Paid", orderStatus: "Order Received" });
       setExpandOrderForm(false);
       showToast(`🎉 Order ${created.id} created successfully!`);
     } catch (err) {
@@ -363,17 +376,17 @@ export function AdminPortal() {
     }
   }, [newOrder, showToast]);
 
-  const handleUpdateOrderStatus = useCallback(async (id: string, newStatus: string) => {
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: newStatus } : o)));
+  const handleUpdateOrder = useCallback(async (id: string, updates: { status?: string; orderStatus?: string }) => {
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, ...updates } : o)));
     try {
       await fetch(`/api/orders/updateOrder/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify(updates),
       });
-      showToast(`⚡ Order ${id} status updated to ${newStatus}`);
+      showToast(`⚡ Order ${id} updated`);
     } catch {
-      showToast("❌ Failed to update order status");
+      showToast("❌ Failed to update order");
       await refreshOrders();
     }
   }, [showToast, refreshOrders]);
@@ -464,11 +477,15 @@ export function AdminPortal() {
                 <p className="admin-sub">Stock, order & catalog statistics for MASH store</p>
               </div>
             </header>
-            <div className="admin-stats-grid">
+            <div className="admin-stats-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16 }}>
               <div className="admin-stat-card purple"><span className="admin-stat-title">Adult Products</span><span className="admin-stat-number">{products.length}</span></div>
               <div className="admin-stat-card green"><span className="admin-stat-title">Kids Products</span><span className="admin-stat-number">{kidsProducts.length}</span></div>
               <div className="admin-stat-card orange"><span className="admin-stat-title">Total Orders</span><span className="admin-stat-number">{orders.length}</span></div>
-              <div className="admin-stat-card accent"><span className="admin-stat-title">Total Adult Stock</span><span className="admin-stat-number">{products.reduce((acc, p) => acc + p.qty, 0)}</span></div>
+              <div className="admin-stat-card accent"><span className="admin-stat-title">Orders This Week</span><span className="admin-stat-number">{ordersThisWeek}</span></div>
+              <div className="admin-stat-card green"><span className="admin-stat-title">Paid Orders</span><span className="admin-stat-number">{paidOrdersCount}</span></div>
+              <div className="admin-stat-card purple" style={{ borderColor: "#ef4444" }}><span className="admin-stat-title">Non-Paid Orders</span><span className="admin-stat-number" style={{ color: "#dc2626" }}>{nonPaidOrdersCount}</span></div>
+              <div className="admin-stat-card orange"><span className="admin-stat-title">Total Adult Stock</span><span className="admin-stat-number">{products.reduce((acc, p) => acc + p.qty, 0)}</span></div>
+              <div className="admin-stat-card green"><span className="admin-stat-title">Total Kids Stock</span><span className="admin-stat-number">{kidsProducts.reduce((acc, p) => acc + p.qty, 0)}</span></div>
             </div>
           </div>
         )}
@@ -678,9 +695,52 @@ export function AdminPortal() {
             <header className="admin-page-header">
               <div className="admin-page-title-group">
                 <h1 className="admin-title">MANUAL ORDER DETAILS</h1>
-                <p className="admin-sub">Manual & automated order entries with payment status tracking</p>
+                <p className="admin-sub">Manual & automated order entries with payment status and delivery tracking</p>
               </div>
             </header>
+
+            {/* CUMULATIVE TOTAL SUMMARY CARDS */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
+              <div
+                style={{
+                  background: "#dcfce7",
+                  border: "1.5px solid #16a34a",
+                  borderRadius: 14,
+                  padding: "16px 20px",
+                  color: "#15803d",
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  💰 Cumulative Total Paid Amount
+                </div>
+                <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4 }}>
+                  ₹{cumulativeTotalPaid.toLocaleString("en-IN")}
+                </div>
+                <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>
+                  Across {paidOrdersCount} paid order{paidOrdersCount !== 1 ? "s" : ""}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: "#fee2e2",
+                  border: "1.5px solid #ef4444",
+                  borderRadius: 14,
+                  padding: "16px 20px",
+                  color: "#991b1b",
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  ⏳ Cumulative Total Non-Paid Amount
+                </div>
+                <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4 }}>
+                  ₹{cumulativeTotalNonPaid.toLocaleString("en-IN")}
+                </div>
+                <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>
+                  Across {nonPaidOrdersCount} non-paid order{nonPaidOrdersCount !== 1 ? "s" : ""}
+                </div>
+              </div>
+            </div>
 
             {/* ADD MANUAL ORDER FORM */}
             <div className="admin-form-header" onClick={() => setExpandOrderForm(!expandOrderForm)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
@@ -736,6 +796,21 @@ export function AdminPortal() {
                       <option value="Not Paid">Not Paid</option>
                     </select>
                   </div>
+
+                  <div className="form-field">
+                    <label className="form-label">Order Status *</label>
+                    <select
+                      className="form-input"
+                      value={newOrder.orderStatus}
+                      onChange={(e) => setNewOrder({ ...newOrder, orderStatus: e.target.value })}
+                    >
+                      <option value="Order Received">Order Received</option>
+                      <option value="In progress">In progress</option>
+                      <option value="In transient">In transient</option>
+                      <option value="customer received">customer received</option>
+                      <option value="Return">Return</option>
+                    </select>
+                  </div>
                 </div>
 
                 <button type="submit" className="admin-action-btn" style={{ background: "#1a1714", color: "#fff", padding: "12px 24px", marginTop: 14 }}>
@@ -760,6 +835,7 @@ export function AdminPortal() {
                         <th style={{ padding: "12px 16px", fontWeight: 700 }}>Customer ID / Email</th>
                         <th style={{ padding: "12px 16px", fontWeight: 700 }}>Total Amount</th>
                         <th style={{ padding: "12px 16px", fontWeight: 700 }}>Payment Status</th>
+                        <th style={{ padding: "12px 16px", fontWeight: 700 }}>Order Status</th>
                         <th style={{ padding: "12px 16px", fontWeight: 700, textAlign: "right" }}>Actions</th>
                       </tr>
                     </thead>
@@ -769,12 +845,14 @@ export function AdminPortal() {
                           <td style={{ padding: "12px 16px", fontWeight: 700, color: "var(--accent)" }}>{ord.id}</td>
                           <td style={{ padding: "12px 16px", fontWeight: 500 }}>{ord.customerId}</td>
                           <td style={{ padding: "12px 16px", fontWeight: 700 }}>₹{ord.totalAmount}</td>
+
+                          {/* PAYMENT STATUS DROPDOWN */}
                           <td style={{ padding: "12px 16px" }}>
                             <select
                               value={ord.status}
-                              onChange={(e) => handleUpdateOrderStatus(ord.id, e.target.value)}
+                              onChange={(e) => handleUpdateOrder(ord.id, { status: e.target.value })}
                               style={{
-                                padding: "6px 12px",
+                                padding: "6px 10px",
                                 borderRadius: 6,
                                 border: ord.status === "Paid" ? "1.5px solid #16a34a" : "1.5px solid #dc2626",
                                 background: ord.status === "Paid" ? "#dcfce7" : "#fee2e2",
@@ -788,6 +866,31 @@ export function AdminPortal() {
                               <option value="Not Paid">Not Paid</option>
                             </select>
                           </td>
+
+                          {/* ORDER STATUS DROPDOWN */}
+                          <td style={{ padding: "12px 16px" }}>
+                            <select
+                              value={ord.orderStatus || "Order Received"}
+                              onChange={(e) => handleUpdateOrder(ord.id, { orderStatus: e.target.value })}
+                              style={{
+                                padding: "6px 10px",
+                                borderRadius: 6,
+                                border: "1px solid var(--border)",
+                                background: "var(--bg2)",
+                                color: "var(--text)",
+                                fontWeight: 600,
+                                fontSize: 12,
+                                cursor: "pointer",
+                              }}
+                            >
+                              <option value="Order Received">Order Received</option>
+                              <option value="In progress">In progress</option>
+                              <option value="In transient">In transient</option>
+                              <option value="customer received">customer received</option>
+                              <option value="Return">Return</option>
+                            </select>
+                          </td>
+
                           <td style={{ padding: "12px 16px", textAlign: "right" }}>
                             <button className="admin-del-btn" onClick={() => handleRemoveOrder(ord.id)}>
                               <Icon.Trash />

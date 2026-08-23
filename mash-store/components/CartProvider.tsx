@@ -2,8 +2,7 @@
 
 /**
  * components/CartProvider.tsx
- * Global client-side state for cart, wishlist, and cached product list.
- * This is the single source of truth for all user-interaction state.
+ * Global client-side state for cart, wishlist, and cached product list with DB persistence.
  */
 
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
@@ -41,6 +40,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [loggedIn, setLoggedIn] = useState(false);
   const [user, setUser] = useState<string | null>(null);
   const [dark, setDarkState] = useState(false);
+  const [isLoadedFromDb, setIsLoadedFromDb] = useState(false);
 
   const toast = useCallback((msg: string) => {
     const id = Date.now() + Math.random();
@@ -53,7 +53,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     document.documentElement.className = v ? "dark" : "";
   }, []);
 
-  // Hydrate product cache for wishlist display
+  // Hydrate product cache
   useEffect(() => {
     fetch("/api/product/allProduct")
       .then((r) => r.json())
@@ -62,6 +62,95 @@ export function CartProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => console.warn("Could not hydrate product cache"));
   }, []);
+
+  // Hydrate OAuth user session & fetch customer cart & wishlist from DB
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then(async (res) => {
+        if (res.authenticated && res.user) {
+          setLoggedIn(true);
+          setUser(res.user.name || res.user.email.split("@")[0]);
+
+          // Fetch customer cart from DB
+          try {
+            const cartRes = await fetch("/api/customer/cart");
+            if (cartRes.ok) {
+              const cartData = await cartRes.json();
+              if (cartData.items && Array.isArray(cartData.items) && cartData.items.length > 0) {
+                // Fetch products to map cart items
+                const prodsRes = await fetch("/api/product/allProduct");
+                const allProds: Product[] = prodsRes.ok ? await prodsRes.json() : [];
+
+                const mappedCart: CartItem[] = cartData.items.map((it: { productId: number; qty: number; size: string }) => {
+                  const match = allProds.find((p) => p.id === it.productId);
+                  const prodObj: CartProduct = match
+                    ? { ...match, price: match.basePrice, image: convertDriveUrl(match.image) }
+                    : {
+                        id: it.productId,
+                        name: `Product #${it.productId} (${it.size})`,
+                        basePrice: 799,
+                        price: 799,
+                        qty: 10,
+                        fit: "Regular",
+                        category: "Men",
+                        sizes: ["S", "M", "L", "XL"],
+                        image: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a",
+                        tags: [],
+                        description: "",
+                        createdAt: new Date(),
+                        updatedAt: new Date(),
+                      };
+                  return { product: prodObj, qty: it.qty };
+                });
+                setCart(mappedCart);
+              }
+            }
+          } catch {}
+
+          // Fetch customer wishlist from DB
+          try {
+            const wishRes = await fetch("/api/customer/wishlist");
+            if (wishRes.ok) {
+              const wishData = await wishRes.json();
+              if (wishData.wishlist && Array.isArray(wishData.wishlist)) {
+                setWishlist(wishData.wishlist);
+              }
+            }
+          } catch {}
+
+          setIsLoadedFromDb(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Sync Cart to DB when cart updates & user is logged in
+  useEffect(() => {
+    if (loggedIn && isLoadedFromDb) {
+      const dbItems = cart.map((ci) => ({
+        productId: ci.product.id,
+        qty: ci.qty,
+        size: ci.product.name.includes("(") ? ci.product.name.split("(")[1].replace(")", "") : "S",
+      }));
+      fetch("/api/customer/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: dbItems }),
+      }).catch(() => {});
+    }
+  }, [cart, loggedIn, isLoadedFromDb]);
+
+  // Sync Wishlist to DB when wishlist updates & user is logged in
+  useEffect(() => {
+    if (loggedIn && isLoadedFromDb) {
+      fetch("/api/customer/wishlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wishlist }),
+      }).catch(() => {});
+    }
+  }, [wishlist, loggedIn, isLoadedFromDb]);
 
   const addToCart = useCallback((product: CartProduct) => {
     if (product.qty <= 0) { toast("Out of stock!"); return; }
@@ -94,25 +183,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   }, [toast]);
 
-  // Hydrate OAuth user session from /api/auth/me
-  useEffect(() => {
-    fetch("/api/auth/me")
-      .then((r) => r.json())
-      .then((res) => {
-        if (res.authenticated && res.user) {
-          setLoggedIn(true);
-          setUser(res.user.name || res.user.email.split("@")[0]);
-        }
-      })
-      .catch(() => {});
-  }, []);
-
   const handleLogin = useCallback((name: string) => {
     setLoggedIn(true); setUser(name); toast(`Welcome, ${name}!`);
   }, [toast]);
 
   const handleLogout = useCallback(async () => {
-    setLoggedIn(false); setUser(null);
+    setLoggedIn(false); setUser(null); setCart([]); setWishlist([]);
     try {
       await fetch("/api/auth/logout", { method: "POST" });
     } catch {}
@@ -128,7 +204,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       dark, setDark,
     }}>
       {children}
-      {/* Global toast container */}
       <div className="toast-wrap">
         {toasts.map((t) => (
           <div key={t.id} className="toast">{t.msg}</div>
@@ -140,6 +215,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
 export function useCart() {
   const ctx = useContext(CartContext);
-  if (!ctx) throw new Error("useCart must be used inside CartProvider");
+  if (!ctx) throw new Error("useCart must be used within CartProvider");
   return ctx;
 }

@@ -341,7 +341,8 @@ export type OrderData = {
   id: string;
   customerId: string;
   totalAmount: number;
-  status: string;
+  status: string; // "Paid" | "Not Paid"
+  orderStatus: string; // "Order Received" | "In progress" | "In transient" | "customer received" | "Return"
   createdAt?: Date;
 };
 
@@ -372,18 +373,79 @@ export async function createCustomer(email: string, name: string, image?: string
   }
 }
 
+/** Get customer cart from DB */
+export async function getCustomerCart(customerId: string) {
+  try {
+    const items = await prisma.customerCart.findMany({ where: { customerId } });
+    return items;
+  } catch {
+    return [];
+  }
+}
+
+/** Save customer cart to DB */
+export async function saveCustomerCart(customerId: string, items: { productId: number; qty: number; size: string; isKids?: boolean }[]) {
+  try {
+    await prisma.customerCart.deleteMany({ where: { customerId } });
+    if (items.length > 0) {
+      await prisma.customerCart.createMany({
+        data: items.map((item) => ({
+          customerId,
+          productId: item.productId,
+          qty: item.qty,
+          size: item.size || "S",
+          isKids: Boolean(item.isKids),
+        })),
+      });
+    }
+    return true;
+  } catch (err) {
+    console.error("Failed to save customer cart:", err);
+    return false;
+  }
+}
+
+/** Get customer wishlist from DB */
+export async function getCustomerWishlist(customerId: string) {
+  try {
+    const items = await prisma.customerWishlist.findMany({ where: { customerId } });
+    return items.map((x) => x.productId);
+  } catch {
+    return [];
+  }
+}
+
+/** Save customer wishlist to DB */
+export async function saveCustomerWishlist(customerId: string, productIds: number[]) {
+  try {
+    await prisma.customerWishlist.deleteMany({ where: { customerId } });
+    if (productIds.length > 0) {
+      await prisma.customerWishlist.createMany({
+        data: productIds.map((pid) => ({
+          customerId,
+          productId: pid,
+        })),
+      });
+    }
+    return true;
+  } catch (err) {
+    console.error("Failed to save customer wishlist:", err);
+    return false;
+  }
+}
+
 /** Get all orders sorted by creation date descending */
 export async function getAllOrders(): Promise<OrderData[]> {
   try {
     const list = await prisma.order.findMany({ orderBy: { createdAt: "desc" } });
-    return list;
+    return list as unknown as OrderData[];
   } catch {
     return [];
   }
 }
 
 /** Create a new order (Order ID starts with 'O', e.g. O-1001) */
-export async function createOrder(data: { id?: string; customerId: string; totalAmount: number; status?: string }): Promise<OrderData> {
+export async function createOrder(data: { id?: string; customerId: string; totalAmount: number; status?: string; orderStatus?: string }): Promise<OrderData> {
   const orderId = data.id || `O-${Math.floor(1000 + Math.random() * 9000)}`;
   try {
     const created = await prisma.order.create({
@@ -392,30 +454,32 @@ export async function createOrder(data: { id?: string; customerId: string; total
         customerId: data.customerId,
         totalAmount: data.totalAmount,
         status: data.status || "Not Paid",
+        orderStatus: data.orderStatus || "Order Received",
       },
     });
-    return created;
+    return created as unknown as OrderData;
   } catch {
     return {
       id: orderId,
       customerId: data.customerId,
       totalAmount: data.totalAmount,
       status: data.status || "Not Paid",
+      orderStatus: data.orderStatus || "Order Received",
       createdAt: new Date(),
     };
   }
 }
 
-/** Update order payment status */
-export async function updateOrderStatus(id: string, status: string): Promise<OrderData | null> {
+/** Update order details (payment status and/or orderStatus) */
+export async function updateOrderDetails(id: string, data: { status?: string; orderStatus?: string }): Promise<OrderData | null> {
   try {
     const updated = await prisma.order.update({
       where: { id },
-      data: { status },
+      data,
     });
-    return updated;
+    return updated as unknown as OrderData;
   } catch {
-    return { id, customerId: "customer@example.com", totalAmount: 0, status };
+    return { id, customerId: "customer@example.com", totalAmount: 0, status: data.status || "Not Paid", orderStatus: data.orderStatus || "Order Received" };
   }
 }
 

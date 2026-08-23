@@ -10,7 +10,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "customerId and totalAmount are required" }, { status: 400 });
     }
 
-    // Ensure Order ID starts with 'O', e.g. O-1001
     let orderId = body.id ? String(body.id).trim() : "";
     if (orderId && !orderId.toUpperCase().startsWith("O")) {
       orderId = `O-${orderId}`;
@@ -24,6 +23,7 @@ export async function POST(req: Request) {
       customerId: body.customerId,
       totalAmount: body.totalAmount,
       status: body.status || "Not Paid",
+      orderStatus: body.orderStatus || "Order Received",
     });
 
     return NextResponse.json(order, { status: 201 });

@@ -74,6 +74,7 @@ model Order {
   customerId  String
   totalAmount Int
   status      String   @default("Not Paid") // "Paid" | "Not Paid"
+  orderStatus String   @default("Order Received") // "Order Received" | "In progress" | "In transient" | "customer received" | "Return"
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
