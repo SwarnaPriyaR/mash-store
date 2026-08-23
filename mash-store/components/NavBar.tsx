@@ -38,14 +38,13 @@ export function NavBar() {
       <nav className="nav" style={{ top: hasBanner ? 40 : 0 }}>
         <Link href="/" className="nav-logo" style={{ display: "flex", alignItems: "center" }}>
           <img
-            src="/logo.png"
+            src={dark ? "/asset/logoDark.png" : "/asset/logoLight.png"}
             alt="MASH"
             style={{
               height: 44,
               width: "auto",
               objectFit: "contain",
-              filter: dark ? "brightness(0) invert(1)" : "none",
-              transition: "filter 0.2s",
+              transition: "opacity 0.2s",
             }}
           />
         </Link>

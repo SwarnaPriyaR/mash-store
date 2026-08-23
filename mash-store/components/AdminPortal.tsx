@@ -190,7 +190,7 @@ export function AdminPortal() {
       <div className="admin-login-container">
         <div className="admin-login-card">
           <div className="admin-login-logo" style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
-            <img src="/logo.png" alt="MASH" style={{ height: 64, width: "auto", objectFit: "contain", filter: "brightness(0) invert(1)" }} />
+            <img src="/asset/logoDark.png" alt="MASH" style={{ height: 64, width: "auto", objectFit: "contain" }} />
           </div>
           <h2 className="admin-login-title">Admin Management Portal</h2>
           <div className="form-field" style={{ textAlign: "left" }}>
@@ -247,7 +247,7 @@ export function AdminPortal() {
       <aside className="admin-sidebar">
         <div className="admin-sidebar-top">
           <div className="admin-sidebar-logo" onClick={() => setCurrentSection("dashboard")} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <img src="/logo.png" alt="MASH" style={{ height: 38, width: "auto", objectFit: "contain", filter: "var(--dark-logo-filter, none)" }} />
+            <img src="/asset/logoLight.png" alt="MASH" style={{ height: 38, width: "auto", objectFit: "contain" }} />
             <span style={{ fontSize: "14px", background: "var(--accent)", color: "#fff", padding: "2px 8px", borderRadius: "4px", letterSpacing: "0.05em" }}>ADMIN</span>
           </div>
           <ul className="admin-sidebar-menu">
