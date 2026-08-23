@@ -42,54 +42,65 @@ export function KidsPageClient({ initialProducts }: Props) {
   return (
     <div
       style={{
-        background: "#ffdbdb",
+        background: "#99c8ec",
         minHeight: "100vh",
         paddingTop: 88,
         paddingBottom: 64,
-        fontFamily: "'Quicksand', 'Nunito', 'DM Sans', sans-serif",
+        fontFamily: "'Lato', 'Open Sans', 'DM Sans', sans-serif",
       }}
     >
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
-        {/* FLOATING HOPSCOTCH-STYLE HEADING & FLOATING FILTERS (NO BOX CONTAINER) */}
+        {/* FLOATING HEADER & FILTERS */}
         <div style={{ marginBottom: 28 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
             <div>
-              <h1
+              {/* BRAND LOGO: Custom Brand Display Style */}
+              <div
                 style={{
-                  fontFamily: "var(--font-bebas), 'Bebas Neue', sans-serif",
-                  fontSize: 42,
+                  fontFamily: "var(--font-bebas), 'Bebas Neue', cursive, sans-serif",
+                  fontSize: 28,
+                  letterSpacing: "0.08em",
                   color: "#1a1714",
-                  margin: 0,
-                  letterSpacing: "0.04em",
+                  fontStyle: "italic",
                 }}
               >
-                MASH KIDS STORE
+                HOPSCOTCH · MASH KIDS
+              </div>
+
+              {/* MAIN PAGE TITLE: Semi-Bold / Regular ~24px */}
+              <h1
+                style={{
+                  fontFamily: "'Lato', 'Open Sans', sans-serif",
+                  fontSize: 24,
+                  fontWeight: 600,
+                  color: "#1a1714",
+                  margin: "4px 0 0 0",
+                }}
+              >
+                Baby & Kids Clothing
               </h1>
-              <p style={{ margin: "4px 0 0 0", color: "#4a3c3c", fontSize: 14, fontWeight: 600 }}>
-                Showing {filtered.length} styles for ages 2 to 9 Years
-              </p>
             </div>
 
             <div
               style={{
                 fontSize: 13,
-                fontWeight: 700,
-                background: "#fcc3c3",
+                fontWeight: 600,
+                background: "#f6b8c1",
                 color: "#1a1714",
                 padding: "8px 16px",
                 borderRadius: 99,
-                border: "1.5px solid #f6a2a2",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
               }}
             >
               🚚 Free Shipping on orders above ₹999
             </div>
           </div>
 
-          {/* FLOATING FILTERS DIRECTLY IN BODY */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* FLOATING FILTERS (NO BOX CONTAINER) */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {/* AGE / SIZE FILTER */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: "#1a1714", minWidth: 90, textTransform: "uppercase" }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "#1a1714", minWidth: 90, textTransform: "uppercase" }}>
                 Age / Size:
               </span>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -99,15 +110,14 @@ export function KidsPageClient({ initialProducts }: Props) {
                     type="button"
                     onClick={() => setSelectedAge(age)}
                     style={{
-                      padding: "6px 16px",
+                      padding: "6px 14px",
                       borderRadius: 99,
-                      border: selectedAge === age ? "2px solid #1a1714" : "1.5px solid #f6a2a2",
-                      background: selectedAge === age ? "#1a1714" : "#fcc3c3",
+                      border: selectedAge === age ? "2px solid #1a1714" : "1.5px solid #ffffff",
+                      background: selectedAge === age ? "#1a1714" : "#ffffff",
                       color: selectedAge === age ? "#ffffff" : "#1a1714",
                       fontSize: 13,
-                      fontWeight: 700,
+                      fontWeight: 600,
                       cursor: "pointer",
-                      transition: "all 0.15s",
                     }}
                   >
                     {age}
@@ -118,7 +128,7 @@ export function KidsPageClient({ initialProducts }: Props) {
 
             {/* GENDER FILTER */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: "#1a1714", minWidth: 90, textTransform: "uppercase" }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "#1a1714", minWidth: 90, textTransform: "uppercase" }}>
                 Gender:
               </span>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -128,47 +138,17 @@ export function KidsPageClient({ initialProducts }: Props) {
                     type="button"
                     onClick={() => setSelectedGender(gen)}
                     style={{
-                      padding: "6px 16px",
+                      padding: "6px 14px",
                       borderRadius: 99,
-                      border: selectedGender === gen ? "2px solid #1a1714" : "1.5px solid #f6a2a2",
-                      background: selectedGender === gen ? "#1a1714" : "#ffffff",
+                      border: selectedGender === gen ? "2px solid #1a1714" : "1.5px solid #ffffff",
+                      background: selectedGender === gen ? "#1a1714" : "#f6b8c1",
                       color: selectedGender === gen ? "#ffffff" : "#1a1714",
                       fontSize: 13,
-                      fontWeight: 700,
+                      fontWeight: 600,
                       cursor: "pointer",
-                      transition: "all 0.15s",
                     }}
                   >
                     {gen === "Girls" ? "🎀 Girls" : gen === "Boys" ? "🧢 Boys" : gen === "Unisex" ? "✨ Unisex" : "All"}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* CATEGORY FILTER */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: "#1a1714", minWidth: 90, textTransform: "uppercase" }}>
-                Category:
-              </span>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {categories.map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => setSelectedCategory(cat)}
-                    style={{
-                      padding: "6px 16px",
-                      borderRadius: 99,
-                      border: selectedCategory === cat ? "2px solid #1a1714" : "1.5px solid #f6a2a2",
-                      background: selectedCategory === cat ? "#1a1714" : "#fcc3c3",
-                      color: selectedCategory === cat ? "#ffffff" : "#1a1714",
-                      fontSize: 13,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      transition: "all 0.15s",
-                    }}
-                  >
-                    {cat}
                   </button>
                 ))}
               </div>
@@ -178,22 +158,22 @@ export function KidsPageClient({ initialProducts }: Props) {
 
         {/* PRODUCTS GRID */}
         {filtered.length === 0 ? (
-          <div style={{ background: "#ffffff", padding: "48px 24px", borderRadius: 20, textAlign: "center", border: "2px solid #f6a2a2" }}>
-            <h3 style={{ fontSize: 20, fontWeight: 700, color: "#1a1714" }}>No kids products match your filter</h3>
-            <p style={{ color: "#666", fontSize: 14 }}>Try resetting your filters to explore all cute dresses.</p>
+          <div style={{ background: "#ffffff", padding: "48px 24px", borderRadius: 20, textAlign: "center" }}>
+            <h3 style={{ fontSize: 18, fontWeight: 600, color: "#1a1714" }}>No products match your selected filter</h3>
             <button
               type="button"
               onClick={() => { setSelectedAge("All"); setSelectedGender("All"); setSelectedCategory("All"); }}
-              style={{ padding: "10px 22px", background: "#1a1714", color: "#fff", borderRadius: 99, border: "none", fontWeight: 700, marginTop: 12, cursor: "pointer" }}
+              style={{ padding: "10px 20px", background: "#1a1714", color: "#fff", borderRadius: 99, border: "none", fontWeight: 600, marginTop: 12, cursor: "pointer" }}
             >
-              Reset Filters
+              Clear Filters
             </button>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 24 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 20 }}>
             {filtered.map((p) => {
-              const price = isSaleOn ? Math.round(p.basePrice * (1 - sale.discount / 100)) : p.basePrice;
-              const onSale = isSaleOn && price < p.basePrice;
+              const discountPercent = isSaleOn ? sale.discount : 25; // Default 25% discount for visual appeal if sale inactive
+              const originalPrice = p.basePrice;
+              const price = Math.round(originalPrice * (1 - discountPercent / 100));
               const currentSize = selectedSizes[p.id] || p.sizes?.[0] || "2–3 Years";
 
               return (
@@ -201,47 +181,52 @@ export function KidsPageClient({ initialProducts }: Props) {
                   key={p.id}
                   style={{
                     background: "#ffffff",
-                    borderRadius: 20,
-                    border: "2px solid #fcc3c3",
+                    borderRadius: 16,
                     overflow: "hidden",
-                    boxShadow: "0 6px 18px rgba(0,0,0,0.05)",
+                    boxShadow: "0 4px 14px rgba(0,0,0,0.06)",
                     display: "flex",
                     flexDirection: "column",
                   }}
                 >
-                  <div style={{ position: "relative", aspectRatio: "4/5", background: "#fff5f5", overflow: "hidden" }}>
+                  <div style={{ position: "relative", aspectRatio: "4/5", background: "#f7fafc", overflow: "hidden" }}>
                     <img
                       src={p.image}
                       alt={p.name}
                       style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                     />
 
-                    <div style={{ position: "absolute", top: 12, left: 12, display: "flex", gap: 6 }}>
-                      <span style={{ background: "#fcc3c3", color: "#1a1714", fontWeight: 800, fontSize: 11, padding: "4px 10px", borderRadius: 99 }}>
-                        KIDS
-                      </span>
-                      {onSale && (
-                        <span style={{ background: "#e53e3e", color: "#fff", fontWeight: 800, fontSize: 11, padding: "4px 10px", borderRadius: 99 }}>
-                          {sale.discount}% OFF
-                        </span>
-                      )}
-                    </div>
+                    {/* DISCOUNT PERCENTAGE: Regular / Medium, Green Accent Color */}
+                    <span
+                      style={{
+                        position: "absolute",
+                        top: 10,
+                        left: 10,
+                        background: "#ffffff",
+                        color: "#16a34a",
+                        fontWeight: 600,
+                        fontSize: 12,
+                        padding: "4px 10px",
+                        borderRadius: 99,
+                        boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
+                      }}
+                    >
+                      {discountPercent}% OFF
+                    </span>
 
                     <button
                       type="button"
                       className="icon-btn"
                       style={{
                         position: "absolute",
-                        top: 12,
-                        right: 12,
+                        top: 10,
+                        right: 10,
                         background: "rgba(255,255,255,0.9)",
                         border: "none",
                         color: wishlist.includes(p.id) ? "#e53e3e" : "#888",
                         borderRadius: 99,
-                        width: 36,
-                        height: 36,
+                        width: 34,
+                        height: 34,
                         cursor: "pointer",
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                       }}
                       onClick={() => toggleWishlist(p as unknown as Product)}
                     >
@@ -249,47 +234,86 @@ export function KidsPageClient({ initialProducts }: Props) {
                     </button>
                   </div>
 
-                  {/* CARD BODY */}
-                  <div style={{ padding: "18px 20px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  {/* PRODUCT CARD BODY */}
+                  <div style={{ padding: "14px 16px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                     <div>
-                      <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1a1714", margin: "0 0 8px 0" }}>{p.name}</h3>
+                      {/* PRODUCT TITLES: Primary Sans-Serif, Regular / Medium ~14px */}
+                      <h3
+                        style={{
+                          fontFamily: "'Lato', 'Open Sans', sans-serif",
+                          fontSize: 14,
+                          fontWeight: 500,
+                          color: "#2d3748",
+                          margin: "0 0 8px 0",
+                          lineHeight: 1.35,
+                        }}
+                      >
+                        {p.name}
+                      </h3>
 
-                      {/* AGE / SIZE SELECTOR BADGES */}
-                      <div style={{ margin: "10px 0" }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "#666", textTransform: "uppercase", marginBottom: 6 }}>
-                          Select Size (Age):
-                        </div>
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                          {(p.sizes || ["2–3 Years", "4–5 Years", "6–7 Years", "8–9 Years"]).map((sz) => (
-                            <button
-                              key={sz}
-                              type="button"
-                              onClick={() => setSelectedSizes((prev) => ({ ...prev, [p.id]: sz }))}
-                              style={{
-                                padding: "4px 10px",
-                                borderRadius: 8,
-                                border: currentSize === sz ? "1.5px solid #1a1714" : "1px solid #e2e8f0",
-                                background: currentSize === sz ? "#1a1714" : "#ffdbdb",
-                                color: currentSize === sz ? "#ffffff" : "#1a1714",
-                                fontSize: 11,
-                                fontWeight: 700,
-                                cursor: "pointer",
-                              }}
-                            >
-                              {sz}
-                            </button>
-                          ))}
-                        </div>
+                      {/* AGE SIZE BADGES */}
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+                        {(p.sizes || ["2–3 Years", "4–5 Years", "6–7 Years", "8–9 Years"]).map((sz) => (
+                          <button
+                            key={sz}
+                            type="button"
+                            onClick={() => setSelectedSizes((prev) => ({ ...prev, [p.id]: sz }))}
+                            style={{
+                              padding: "3px 8px",
+                              borderRadius: 6,
+                              border: currentSize === sz ? "1.5px solid #1a1714" : "1px solid #e2e8f0",
+                              background: currentSize === sz ? "#1a1714" : "#f7fafc",
+                              color: currentSize === sz ? "#ffffff" : "#4a5568",
+                              fontSize: 11,
+                              fontWeight: 500,
+                              cursor: "pointer",
+                            }}
+                          >
+                            {sz}
+                          </button>
+                        ))}
                       </div>
                     </div>
 
-                    {/* PRICE & ADD TO CART BUTTON */}
-                    <div style={{ marginTop: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                      <div>
-                        <div style={{ fontFamily: "var(--font-bebas), 'Bebas Neue', sans-serif", fontSize: 24, color: "#1a1714", margin: 0 }}>
+                    {/* PRICING ROW */}
+                    <div>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+                        {/* DISCOUNTED PRICE: Bold, Dark/Primary Color */}
+                        <span
+                          style={{
+                            fontFamily: "'Lato', 'Open Sans', sans-serif",
+                            fontSize: 18,
+                            fontWeight: 700,
+                            color: "#1a1714",
+                          }}
+                        >
                           ₹{price}
-                        </div>
-                        {onSale && <span style={{ fontSize: 12, color: "#888", textDecoration: "line-through" }}>₹{p.basePrice}</span>}
+                        </span>
+
+                        {/* ORIGINAL PRICE: Light / Regular, Strikethrough, Muted Gray */}
+                        <span
+                          style={{
+                            fontFamily: "'Lato', 'Open Sans', sans-serif",
+                            fontSize: 13,
+                            fontWeight: 400,
+                            textDecoration: "line-through",
+                            color: "#718096",
+                          }}
+                        >
+                          ₹{originalPrice}
+                        </span>
+
+                        {/* DISCOUNT PERCENTAGE: Green Accent */}
+                        <span
+                          style={{
+                            fontFamily: "'Lato', 'Open Sans', sans-serif",
+                            fontSize: 12,
+                            fontWeight: 500,
+                            color: "#16a34a",
+                          }}
+                        >
+                          ({discountPercent}% off)
+                        </span>
                       </div>
 
                       <button
@@ -302,15 +326,16 @@ export function KidsPageClient({ initialProducts }: Props) {
                           })
                         }
                         style={{
-                          padding: "10px 18px",
-                          borderRadius: 12,
+                          width: "100%",
+                          marginTop: 10,
+                          padding: "8px 14px",
+                          borderRadius: 8,
                           border: "none",
                           background: "#1a1714",
                           color: "#ffffff",
-                          fontWeight: 700,
+                          fontWeight: 600,
                           fontSize: 13,
                           cursor: "pointer",
-                          boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
                         }}
                       >
                         + Add to Cart

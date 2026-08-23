@@ -122,11 +122,62 @@ export const DEFAULT_KIDS_PRODUCTS: KidsProduct[] = [
   },
 ];
 
+export const DEFAULT_ADULT_PRODUCTS: Product[] = [
+  {
+    id: 1,
+    name: "Cyberpunk Neon Graphic Oversized Tee",
+    basePrice: 799,
+    qty: 24,
+    fit: "Oversized",
+    category: "Men T-Shirt",
+    sizes: ["S", "M", "L", "XL"],
+    image: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=600&q=80",
+    tags: ["Men T-Shirt", "Streetwear", "Oversized", "Graphic"],
+    description: "240 GSM heavy cotton oversized tee with futuristic neon Tokyo graphic back print.",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 2,
+    name: "Acid Wash Vintage Heavyweight Tee",
+    basePrice: 899,
+    qty: 18,
+    fit: "Regular",
+    category: "Men T-Shirt",
+    sizes: ["S", "M", "L", "XL"],
+    image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600&q=80",
+    tags: ["Men T-Shirt", "Vintage", "Acid Wash"],
+    description: "Custom vintage distressed acid wash finish. Reinforced collar and double-stitched hem.",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 3,
+    name: "Minimalist Essential Pastel Pink Crop Tee",
+    basePrice: 699,
+    qty: 30,
+    fit: "Regular",
+    category: "Women T-Shirt",
+    sizes: ["S", "M", "L", "XL"],
+    image: "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=600&q=80",
+    tags: ["Women T-Shirt", "Minimalist", "Pastel"],
+    description: "Ultra-soft combed organic cotton boxy fit tee with discrete high-density rubber chest logo.",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+];
+
 // ── Query Functions ────────────────────────────────────────────────────────────
 
 /** Fetch all standard products sorted by ID ascending */
 export async function getAllProducts(): Promise<Product[]> {
-  return prisma.product.findMany({ orderBy: { id: "asc" } });
+  try {
+    const list = await prisma.product.findMany({ orderBy: { id: "asc" } });
+    if (list.length > 0) return list;
+    return DEFAULT_ADULT_PRODUCTS;
+  } catch {
+    return DEFAULT_ADULT_PRODUCTS;
+  }
 }
 
 /** Fetch all kids products from KidsProduct table with fail-safe fallback */
@@ -153,11 +204,10 @@ export async function getProductsByCategory(category: string): Promise<Product[]
       orderBy: { id: "asc" },
     });
   } catch {
-    const all = await prisma.product.findMany({ orderBy: { id: "asc" } });
     const catLower = category.toLowerCase();
-    return all.filter((p) => {
-      const pCat = (p as Record<string, unknown>).category as string | undefined;
-      if (pCat && pCat.toLowerCase() === catLower) return true;
+    return DEFAULT_ADULT_PRODUCTS.filter((p) => {
+      const pCat = p.category?.toLowerCase();
+      if (pCat && pCat === catLower) return true;
       if (p.tags && p.tags.some((t) => t.toLowerCase() === catLower)) return true;
       return false;
     });

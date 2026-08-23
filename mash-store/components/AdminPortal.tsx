@@ -403,8 +403,8 @@ export function AdminPortal() {
           </div>
           <ul className="admin-sidebar-menu">
             <li><button className={`admin-sidebar-btn ${currentSection === "dashboard" ? "active" : ""}`} onClick={() => setCurrentSection("dashboard")}>📊 Dashboard</button></li>
-            <li><button className={`admin-sidebar-btn ${currentSection === "inventory" ? "active" : ""}`} onClick={() => setCurrentSection("inventory")}>👕 Adult Products (S, M, L, XL)</button></li>
-            <li><button className={`admin-sidebar-btn ${currentSection === "kids-inventory" ? "active" : ""}`} onClick={() => setCurrentSection("kids-inventory")}>🎈 Kids Products (2–9 Y)</button></li>
+            <li><button className={`admin-sidebar-btn ${currentSection === "inventory" ? "active" : ""}`} onClick={() => setCurrentSection("inventory")}>👕 Adult Products</button></li>
+            <li><button className={`admin-sidebar-btn ${currentSection === "kids-inventory" ? "active" : ""}`} onClick={() => setCurrentSection("kids-inventory")}>🎈 Kids Products</button></li>
             <li><button className={`admin-sidebar-btn ${currentSection === "sale" ? "active" : ""}`} onClick={() => setCurrentSection("sale")}>🏷️ Sale Controller</button></li>
           </ul>
         </div>
