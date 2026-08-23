@@ -40,17 +40,6 @@ export function NavBar() {
       <nav className="nav" style={{ top: hasBanner ? 40 : 0 }}>
         <Link href="/" className="nav-logo" style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <img
-            src="/asset/mashLogo.png"
-            alt="MASH Logo"
-            style={{
-              height: 40,
-              width: 40,
-              borderRadius: 8,
-              objectFit: "cover",
-              boxShadow: "0 0 12px rgba(6, 182, 212, 0.4)",
-            }}
-          />
-          <img
             src={dark ? "/asset/logoDark.png" : "/asset/logoLight.png"}
             alt="MASH"
             style={{
