@@ -36,8 +36,18 @@ export function NavBar() {
       {isUpcomingSale && <SaleBanner sale={sale} type="upcoming" />}
 
       <nav className="nav" style={{ top: hasBanner ? 40 : 0 }}>
-        <Link href="/" className="nav-logo">
-          <Icon.Shirt /> MASH
+        <Link href="/" className="nav-logo" style={{ display: "flex", alignItems: "center" }}>
+          <img
+            src="/logo.png"
+            alt="MASH"
+            style={{
+              height: 44,
+              width: "auto",
+              objectFit: "contain",
+              filter: dark ? "brightness(0) invert(1)" : "none",
+              transition: "filter 0.2s",
+            }}
+          />
         </Link>
         <div className="nav-right">
           <button className="icon-btn" onClick={() => setDark(!dark)} title="Toggle theme">
