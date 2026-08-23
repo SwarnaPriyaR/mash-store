@@ -9,7 +9,7 @@ import { createContext, useContext, useState, useCallback, useEffect, type React
 import { convertDriveUrl } from "@/lib/helpers";
 import type { Product } from "@/lib/db";
 
-export type CartProduct = Product & { price: number };
+export type CartProduct = Product & { price: number; isKids?: boolean };
 export type CartItem = { product: CartProduct; qty: number };
 
 interface CartContextValue {

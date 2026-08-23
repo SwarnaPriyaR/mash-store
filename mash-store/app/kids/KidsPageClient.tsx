@@ -43,7 +43,6 @@ export function KidsPageClient({ initialProducts }: Props) {
         minHeight: "100vh",
         paddingTop: 88,
         paddingBottom: 64,
-        fontFamily: "'Lato', 'Open Sans', 'DM Sans', sans-serif",
         transition: "background-color 0.3s, color 0.3s",
       }}
     >
@@ -67,20 +66,6 @@ export function KidsPageClient({ initialProducts }: Props) {
               <p style={{ margin: "4px 0 0 0", color: "var(--text2)", fontSize: 14, fontWeight: 500 }}>
                 Showing {filtered.length} styles for kids
               </p>
-            </div>
-
-            <div
-              style={{
-                fontSize: 13,
-                fontWeight: 600,
-                background: "var(--bg2)",
-                color: "var(--text)",
-                border: "1px solid var(--border)",
-                padding: "8px 16px",
-                borderRadius: 99,
-              }}
-            >
-              🚚 Free Shipping on orders above ₹999
             </div>
           </div>
 
@@ -254,7 +239,7 @@ export function KidsPageClient({ initialProducts }: Props) {
                         height: 34,
                         cursor: "pointer",
                       }}
-                      onClick={() => toggleWishlist(p as unknown as Product)}
+                      onClick={() => toggleWishlist({ ...(p as unknown as Product), isKids: true })}
                     >
                       <Icon.Heart filled={wishlist.includes(p.id)} />
                     </button>
@@ -349,6 +334,7 @@ export function KidsPageClient({ initialProducts }: Props) {
                           addToCart({
                             ...(p as unknown as Product),
                             price,
+                            isKids: true,
                             name: `${p.name} (${currentSize})`,
                           })
                         }

@@ -45,10 +45,13 @@
   --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.44);
 }
 
+html, body, button, input, select, textarea {
+  font-family: var(--font-dm-sans), 'DM Sans', system-ui, -apple-system, sans-serif;
+}
+
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-dm-sans), 'DM Sans', sans-serif;
   min-height: 100vh;
 }
 
