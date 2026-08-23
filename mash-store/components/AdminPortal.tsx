@@ -260,8 +260,8 @@ export function AdminPortal() {
             <span style={{ fontSize: "14px", background: "var(--accent)", color: "#fff", padding: "2px 8px", borderRadius: "4px", letterSpacing: "0.05em" }}>ADMIN</span>
           </div>
           <ul className="admin-sidebar-menu">
-            <li><button className={`admin-sidebar-btn ${currentSection === "dashboard" ? "active" : ""}`} onClick={() => setCurrentSection("dashboard")}>📊 Dashboard</button></li>
-            <li><button className={`admin-sidebar-btn ${currentSection === "inventory" ? "active" : ""}`} onClick={() => setCurrentSection("inventory")}>📦 Inventory Manager</button></li>
+            <li><button className={`admin-sidebar-btn ${currentSection === "inventory" ? "active" : ""}`} onClick={() => setCurrentSection("inventory")}>📦 Main Inventory (S, M, L, XL)</button></li>
+            <li><button className={`admin-sidebar-btn ${currentSection === "kids-inventory" ? "active" : ""}`} onClick={() => setCurrentSection("kids-inventory")}>🎈 Kids Inventory (2–9 Y)</button></li>
             <li><button className={`admin-sidebar-btn ${currentSection === "sale" ? "active" : ""}`} onClick={() => setCurrentSection("sale")}>🏷️ Sale Controller</button></li>
           </ul>
         </div>

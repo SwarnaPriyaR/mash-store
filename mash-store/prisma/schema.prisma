@@ -17,8 +17,22 @@ model Product {
   qty         Int      @default(0)
   fit         String   @default("Regular")
   category    String   @default("Men T-Shirt")
+  sizes       String[] @default(["S", "M", "L", "XL"])
   image       String
   tags        String[] @default([])
+  description String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model KidsProduct {
+  id          Int      @id @default(autoincrement())
+  name        String
+  basePrice   Int
+  qty         Int      @default(0)
+  sizes       String[] @default(["2–3 Years", "4–5 Years", "6–7 Years", "8–9 Years"])
+  image       String
+  tags        String[] @default(["Kids"])
   description String   @default("")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

@@ -41,7 +41,7 @@ export default function HomePage() {
               boxShadow: "0 4px 20px rgba(236,72,153,0.35)",
             }}
           >
-            Go Kids 🎈
+            Go Kids
           </Link>
         </div>
         <div className="hero-strips">

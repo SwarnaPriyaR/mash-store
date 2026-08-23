@@ -5,138 +5,163 @@ import Link from "next/link";
 import { Icon } from "@/components/Icon";
 import { useCart } from "@/components/CartProvider";
 import { useSale } from "@/components/SaleProvider";
-import type { Product } from "@/lib/db";
+import type { KidsProduct, Product } from "@/lib/db";
 
 interface Props {
-  initialProducts: Product[];
+  initialProducts: KidsProduct[];
 }
 
 export function KidsPageClient({ initialProducts }: Props) {
   const { wishlist, toggleWishlist, addToCart } = useCart();
   const { sale } = useSale();
-  const [filterFit, setFilterFit] = useState("All");
+  const [selectedAge, setSelectedAge] = useState("All");
+  const [selectedSizes, setSelectedSizes] = useState<Record<number, string>>({});
 
   const isSaleOn = sale.active && Date.now() >= sale.start && Date.now() <= sale.end;
 
-  const fits = ["All", "Regular", "Oversized"];
-  const filtered = filterFit === "All"
+  const ageGroups = ["All", "2–3 Years", "4–5 Years", "6–7 Years", "8–9 Years"];
+
+  const filtered = selectedAge === "All"
     ? initialProducts
-    : initialProducts.filter(p => p.fit === filterFit);
+    : initialProducts.filter((p) => p.sizes?.includes(selectedAge));
 
   return (
-    <div style={{ background: "var(--bg)", minHeight: "100vh", paddingTop: 96, paddingBottom: 64 }}>
-      {/* HERO BANNER FOR KIDS */}
-      <div
-        style={{
-          maxWidth: 1200,
-          margin: "0 auto 40px",
-          padding: "36px 32px",
-          borderRadius: 24,
-          background: "linear-gradient(135deg, #ff70a6 0%, #ff9770 30%, #ffd670 60%, #e9ff70 100%)",
-          boxShadow: "0 12px 32px rgba(255, 112, 166, 0.25)",
-          color: "#1a1714",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        <div style={{ position: "relative", zIndex: 2 }}>
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              background: "#1a1714",
-              color: "#fff",
-              padding: "6px 16px",
-              borderRadius: 99,
-              fontSize: 12,
-              fontWeight: 700,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              marginBottom: 16,
-            }}
-          >
-            <span>🎈</span> MASH KIDS COLLECTION
+    <div
+      style={{
+        background: "#99c8ec",
+        minHeight: "100vh",
+        paddingTop: 88,
+        paddingBottom: 64,
+        fontFamily: "'DM Sans', sans-serif",
+      }}
+    >
+      {/* HOPSCOTCH INSPIRED MASH KIDS BANNER */}
+      <div style={{ maxWidth: 1140, margin: "0 auto 32px", padding: "0 24px" }}>
+        <div
+          style={{
+            background: "linear-gradient(135deg, #ffffff 0%, #ffe5ec 50%, #f6b8c1 100%)",
+            borderRadius: 24,
+            padding: "36px 40px",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+            border: "3px solid #ffffff",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          <div style={{ position: "relative", zIndex: 2 }}>
+            <span
+              style={{
+                display: "inline-block",
+                background: "#f6b8c1",
+                color: "#1a1714",
+                fontWeight: 800,
+                fontSize: 12,
+                padding: "6px 14px",
+                borderRadius: 99,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                marginBottom: 12,
+              }}
+            >
+              Shop By Age · 2 to 9 Years
+            </span>
+
+            <h1
+              style={{
+                fontFamily: "var(--font-bebas), 'Bebas Neue', sans-serif",
+                fontSize: "clamp(42px, 7vw, 76px)",
+                color: "#1a1714",
+                margin: 0,
+                lineHeight: 0.95,
+                letterSpacing: "0.02em",
+              }}
+            >
+              MASH KIDS
+            </h1>
+
+            <p style={{ color: "#4a4238", fontSize: 16, fontWeight: 500, marginTop: 10, maxWidth: 500, lineHeight: 1.5 }}>
+              Softest organic cotton, ultra-comfortable stitching, and cute everyday styles crafted for little smiles.
+            </p>
+
+            {/* AGE QUICK FILTER CHIPS */}
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 20 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, alignSelf: "center", color: "#1a1714", marginRight: 4 }}>
+                Filter Age:
+              </span>
+              {ageGroups.map((age) => (
+                <button
+                  key={age}
+                  onClick={() => setSelectedAge(age)}
+                  style={{
+                    padding: "8px 18px",
+                    borderRadius: 99,
+                    border: "2px solid #ffffff",
+                    background: selectedAge === age ? "#1a1714" : "#ffffff",
+                    color: selectedAge === age ? "#ffffff" : "#1a1714",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                  }}
+                >
+                  {age}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <h1
-            style={{
-              fontFamily: "var(--font-bebas), 'Bebas Neue', sans-serif",
-              fontSize: "clamp(48px, 8vw, 84px)",
-              lineHeight: 0.95,
-              margin: 0,
-              color: "#1a1714",
-              textShadow: "2px 2px 0px rgba(255,255,255,0.8)",
-            }}
-          >
-            MASH KIDS 🎨✨
-          </h1>
-
-          <p style={{ fontSize: 16, fontWeight: 500, color: "#2d2823", maxWidth: 520, marginTop: 12, lineHeight: 1.6 }}>
-            Super fun, colorful, and extra durable outfits designed for energetic kids! Premium soft cotton for all-day comfort.
-          </p>
+          {/* Background decorative circles */}
+          <div style={{ position: "absolute", top: -30, right: -30, width: 200, height: 200, borderRadius: "50%", background: "rgba(255,255,255,0.4)" }} />
+          <div style={{ position: "absolute", bottom: -50, right: 100, width: 160, height: 160, borderRadius: "50%", background: "rgba(246, 184, 193, 0.5)" }} />
         </div>
-
-        {/* Decorative background shapes */}
-        <div style={{ position: "absolute", top: -20, right: -20, width: 180, height: 180, borderRadius: "50%", background: "rgba(255,255,255,0.3)", pointerEvents: "none" }} />
-        <div style={{ position: "absolute", bottom: -40, right: 120, width: 140, height: 140, borderRadius: "50%", background: "rgba(255,255,255,0.25)", pointerEvents: "none" }} />
       </div>
 
-      {/* FILTER & HEADER SECTION */}
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, flexWrap: "wrap", gap: 16 }}>
-          <div>
-            <h2 style={{ fontFamily: "var(--font-bebas), 'Bebas Neue', sans-serif", fontSize: 36, margin: 0, letterSpacing: "0.04em" }}>
-              EXPLORE KIDS DRESSES ({filtered.length})
-            </h2>
-            <p style={{ color: "var(--text2)", fontSize: 14, margin: "4px 0 0" }}>
-              Bright colors, playful fits, and 100% skin-safe cotton.
-            </p>
-          </div>
-
-          <div style={{ display: "flex", gap: 8 }}>
-            {fits.map(f => (
-              <button
-                key={f}
-                className={`fit-chip ${filterFit === f ? "active" : ""}`}
-                onClick={() => setFilterFit(f)}
-                style={{
-                  padding: "8px 18px",
-                  borderRadius: 99,
-                  fontWeight: 600,
-                  fontSize: 13,
-                  cursor: "pointer",
-                }}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
+      {/* PRODUCTS SECTION */}
+      <div style={{ maxWidth: 1140, margin: "0 auto", padding: "0 24px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 20 }}>
+          <h2 style={{ fontFamily: "var(--font-bebas), 'Bebas Neue', sans-serif", fontSize: 32, color: "#1a1714", margin: 0, letterSpacing: "0.04em" }}>
+            KIDS COLLECTION ({filtered.length})
+          </h2>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#2d3748" }}>Free shipping on orders above ₹999</span>
         </div>
 
-        {/* PRODUCT GRID */}
-        <div className="product-grid">
-          {filtered.map(p => {
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 24 }}>
+          {filtered.map((p) => {
             const price = isSaleOn ? Math.round(p.basePrice * (1 - sale.discount / 100)) : p.basePrice;
             const onSale = isSaleOn && price < p.basePrice;
+            const currentSize = selectedSizes[p.id] || p.sizes?.[0] || "2–3 Years";
 
             return (
               <div
                 key={p.id}
-                className={`product-card ${p.qty === 0 ? "oos" : ""}`}
                 style={{
-                  borderRadius: 16,
-                  border: "2px solid var(--border)",
-                  transition: "all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                  background: "#f6b8c1",
+                  borderRadius: 20,
+                  border: "3px solid #ffffff",
+                  overflow: "hidden",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
+                  display: "flex",
+                  flexDirection: "column",
+                  transition: "transform 0.2s, box-shadow 0.2s",
                 }}
               >
-                <div className="product-img-wrap" style={{ position: "relative" }}>
-                  <img src={p.image} alt={p.name} className="product-img" loading="lazy" />
+                <div style={{ position: "relative", aspectRatio: "4/5", background: "#ffffff", overflow: "hidden" }}>
+                  <img
+                    src={p.image}
+                    alt={p.name}
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                  />
 
-                  <div className="product-tags">
-                    <span className="product-tag" style={{ background: "#ec4899", color: "#fff" }}>Kids</span>
-                    {onSale && <span className="sale-tag">{sale.discount}% OFF</span>}
-                    {p.qty === 0 && <span className="oos-tag">Out of Stock</span>}
+                  <div style={{ position: "absolute", top: 12, left: 12, display: "flex", gap: 6 }}>
+                    <span style={{ background: "#ffffff", color: "#1a1714", fontWeight: 800, fontSize: 11, padding: "4px 10px", borderRadius: 99, boxShadow: "0 2px 6px rgba(0,0,0,0.1)" }}>
+                      KIDS
+                    </span>
+                    {onSale && (
+                      <span style={{ background: "#e53e3e", color: "#fff", fontWeight: 800, fontSize: 11, padding: "4px 10px", borderRadius: 99 }}>
+                        {sale.discount}% OFF
+                      </span>
+                    )}
                   </div>
 
                   <button
@@ -147,44 +172,83 @@ export function KidsPageClient({ initialProducts }: Props) {
                       right: 12,
                       background: "rgba(255,255,255,0.9)",
                       border: "none",
-                      color: wishlist.includes(p.id) ? "#ec4899" : "#888",
+                      color: wishlist.includes(p.id) ? "#e53e3e" : "#888",
+                      borderRadius: 99,
+                      width: 36,
+                      height: 36,
                     }}
-                    onClick={(e) => { e.stopPropagation(); toggleWishlist(p); }}
+                    onClick={() => toggleWishlist(p as unknown as Product)}
                   >
                     <Icon.Heart filled={wishlist.includes(p.id)} />
                   </button>
                 </div>
 
-                <div className="product-info" style={{ padding: "16px 20px 20px" }}>
+                {/* CARD BODY IN #f6b8c1 */}
+                <div style={{ padding: "18px 20px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                   <div>
-                    <div className="product-name" style={{ fontSize: 18, fontWeight: 700 }}>{p.name}</div>
-                    <div style={{ fontSize: 12, color: "#8b5cf6", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4 }}>
-                      {p.fit} Fit · Kids Special
+                    <h3 style={{ fontSize: 17, fontWeight: 800, color: "#1a1714", margin: "0 0 6px 0" }}>{p.name}</h3>
+
+                    {/* SIZE SELECTOR BADGES */}
+                    <div style={{ margin: "10px 0" }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#4a4238", textTransform: "uppercase", marginBottom: 6 }}>
+                        Available Sizes:
+                      </div>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        {(p.sizes || ["2–3 Years", "4–5 Years", "6–7 Years", "8–9 Years"]).map((sz) => (
+                          <button
+                            key={sz}
+                            onClick={() => setSelectedSizes({ ...selectedSizes, [p.id]: sz })}
+                            style={{
+                              padding: "4px 10px",
+                              borderRadius: 8,
+                              border: "1.5px solid #ffffff",
+                              background: currentSize === sz ? "#1a1714" : "#ffffff",
+                              color: currentSize === sz ? "#ffffff" : "#1a1714",
+                              fontSize: 11,
+                              fontWeight: 700,
+                              cursor: "pointer",
+                            }}
+                          >
+                            {sz}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
-                  <div style={{ marginTop: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div className="price-row">
-                      <span className="product-price" style={{ fontSize: 24, color: "var(--accent)" }}>
+                  {/* PRICE & ADD TO CART */}
+                  <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                    <div>
+                      <div style={{ fontFamily: "var(--font-bebas), 'Bebas Neue', sans-serif", fontSize: 24, color: "#1a1714", margin: 0 }}>
                         ₹{price}
-                      </span>
-                      {onSale && <span className="product-price-orig">₹{p.basePrice}</span>}
+                      </div>
+                      {onSale && <span style={{ fontSize: 12, color: "#666", textDecoration: "line-through" }}>₹{p.basePrice}</span>}
                     </div>
 
-                    <Link
-                      href={`/product/${p.id}`}
+                    <button
+                      onClick={() =>
+                        addToCart({
+                          ...(p as unknown as Product),
+                          price,
+                          name: `${p.name} (${currentSize})`,
+                        })
+                      }
                       style={{
-                        padding: "8px 16px",
-                        borderRadius: 8,
-                        background: "var(--accent)",
-                        color: "#fff",
-                        textDecoration: "none",
-                        fontSize: 13,
+                        marginLeft: "auto",
+                        padding: "10px 18px",
+                        borderRadius: 12,
+                        border: "none",
+                        background: "#1a1714",
+                        color: "#ffffff",
                         fontWeight: 700,
+                        fontSize: 13,
+                        cursor: "pointer",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                        transition: "transform 0.15s",
                       }}
                     >
-                      View Details →
-                    </Link>
+                      + Add to Cart
+                    </button>
                   </div>
                 </div>
               </div>
