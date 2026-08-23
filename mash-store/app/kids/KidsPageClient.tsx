@@ -36,116 +36,91 @@ export function KidsPageClient({ initialProducts }: Props) {
   });
 
   return (
-    <div
-      style={{
-        background: "var(--bg)",
-        color: "var(--text)",
-        minHeight: "100vh",
-        paddingTop: 88,
-        paddingBottom: 64,
-        transition: "background-color 0.3s, color 0.3s",
-      }}
-    >
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
-        {/* HEADER SECTION */}
-        <div style={{ marginBottom: 28 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 12 }}>
-            <div>
-              <h1
-                style={{
-                  fontFamily: "var(--font-bebas), 'Bebas Neue', sans-serif",
-                  fontSize: 36,
-                  fontWeight: 700,
-                  color: "var(--text)",
-                  margin: 0,
-                  letterSpacing: "0.04em",
-                }}
-              >
-                MASH KIDS
-              </h1>
-              <p style={{ margin: "4px 0 0 0", color: "var(--text2)", fontSize: 14, fontWeight: 500 }}>
-                Showing {filtered.length} styles for kids
-              </p>
+    <div className="products-page" style={{ paddingTop: 96 }}>
+      {/* HEADER SECTION */}
+      <div className="products-header" style={{ marginBottom: 28 }}>
+        <h1 className="products-title">MASH KIDS</h1>
+        <p className="products-sub">
+          Showing {filtered.length} style{filtered.length !== 1 ? "s" : ""} for kids
+        </p>
+
+        {/* FLOATING FILTERS */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 16 }}>
+          {/* AGE / SIZE FILTER */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", minWidth: 90, textTransform: "uppercase" }}>
+              Age / Size:
+            </span>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {ageGroups.map((age) => (
+                <button
+                  key={age}
+                  type="button"
+                  onClick={() => setSelectedAge(age)}
+                  style={{
+                    padding: "6px 14px",
+                    borderRadius: 99,
+                    border: selectedAge === age ? "1.5px solid var(--accent)" : "1px solid var(--border)",
+                    background: selectedAge === age ? "var(--accent)" : "var(--bg2)",
+                    color: selectedAge === age ? "#ffffff" : "var(--text)",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  {age}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* FLOATING FILTERS */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {/* AGE / SIZE FILTER */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", minWidth: 90, textTransform: "uppercase" }}>
-                Age / Size:
-              </span>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {ageGroups.map((age) => (
-                  <button
-                    key={age}
-                    type="button"
-                    onClick={() => setSelectedAge(age)}
-                    style={{
-                      padding: "6px 14px",
-                      borderRadius: 99,
-                      border: selectedAge === age ? "1.5px solid var(--accent)" : "1px solid var(--border)",
-                      background: selectedAge === age ? "var(--accent)" : "var(--bg2)",
-                      color: selectedAge === age ? "#ffffff" : "var(--text)",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      transition: "all 0.15s",
-                    }}
-                  >
-                    {age}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* GENDER FILTER: Girl, Boy, Unisex */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", minWidth: 90, textTransform: "uppercase" }}>
-                Gender:
-              </span>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {genders.map((gen) => (
-                  <button
-                    key={gen}
-                    type="button"
-                    onClick={() => setSelectedGender(gen)}
-                    style={{
-                      padding: "6px 14px",
-                      borderRadius: 99,
-                      border: selectedGender === gen ? "1.5px solid var(--accent)" : "1px solid var(--border)",
-                      background: selectedGender === gen ? "var(--accent)" : "var(--bg2)",
-                      color: selectedGender === gen ? "#ffffff" : "var(--text)",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      transition: "all 0.15s",
-                    }}
-                  >
-                    {gen}
-                  </button>
-                ))}
-              </div>
+          {/* GENDER FILTER: Girl, Boy, Unisex */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", minWidth: 90, textTransform: "uppercase" }}>
+              Gender:
+            </span>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {genders.map((gen) => (
+                <button
+                  key={gen}
+                  type="button"
+                  onClick={() => setSelectedGender(gen)}
+                  style={{
+                    padding: "6px 14px",
+                    borderRadius: 99,
+                    border: selectedGender === gen ? "1.5px solid var(--accent)" : "1px solid var(--border)",
+                    background: selectedGender === gen ? "var(--accent)" : "var(--bg2)",
+                    color: selectedGender === gen ? "#ffffff" : "var(--text)",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  {gen}
+                </button>
+              ))}
             </div>
           </div>
         </div>
+      </div>
 
-        {/* PRODUCTS GRID */}
-        {filtered.length === 0 ? (
-          <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", padding: "48px 24px", borderRadius: 16, textAlign: "center" }}>
-            <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)" }}>No products available</h3>
-            <p style={{ color: "var(--text2)", fontSize: 14 }}>Add kids products from the Admin Portal to showcase them here.</p>
-            <button
-              type="button"
-              onClick={() => { setSelectedAge("All"); setSelectedGender("All"); setSelectedCategory("All"); }}
-              style={{ padding: "10px 20px", background: "var(--accent)", color: "#fff", borderRadius: 99, border: "none", fontWeight: 600, marginTop: 12, cursor: "pointer" }}
-            >
-              Clear Filters
-            </button>
-          </div>
-        ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 20 }}>
+      {/* PRODUCTS GRID */}
+      {filtered.length === 0 ? (
+        <div style={{ background: "var(--bg2)", border: "1px solid var(--border)", padding: "48px 24px", borderRadius: 16, textAlign: "center" }}>
+          <h3 style={{ fontSize: 18, fontWeight: 600, color: "var(--text)" }}>No products available</h3>
+          <p style={{ color: "var(--text2)", fontSize: 14 }}>Add kids products from the Admin Portal to showcase them here.</p>
+          <button
+            type="button"
+            onClick={() => { setSelectedAge("All"); setSelectedGender("All"); setSelectedCategory("All"); }}
+            style={{ padding: "10px 20px", background: "var(--accent)", color: "#fff", borderRadius: 99, border: "none", fontWeight: 600, marginTop: 12, cursor: "pointer" }}
+          >
+            Clear Filters
+          </button>
+        </div>
+      ) : (
+        <div className="product-grid">
             {filtered.map((p) => {
               const price = isSaleOn ? Math.round(p.basePrice * (1 - sale.discount / 100)) : p.basePrice;
               const onSale = isSaleOn && price < p.basePrice;
@@ -360,7 +335,6 @@ export function KidsPageClient({ initialProducts }: Props) {
             })}
           </div>
         )}
-      </div>
     </div>
   );
 }
