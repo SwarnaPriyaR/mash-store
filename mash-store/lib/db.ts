@@ -70,22 +70,26 @@ export type UpdateProductPayload = Partial<{
   description: string;
 }>;
 
-export type OrderItem = {
+export type OrderItemData = {
+  itemId: string; // Formatted as: orderId + "_" + productId + "_" + quantity
+  orderId?: string;
   productId: number;
-  name: string;
-  price: number;
-  qty: number;
-  size?: string;
-  isKids?: boolean;
+  isKids: boolean;
+  productName: string;
+  size: string;
+  quantity: number;
+  unitPrice: number;
+  subtotal: number;
 };
 
 export type OrderData = {
   id: string;
   customerId: string;
-  items?: OrderItem[];
+  items?: OrderItemData[];
   totalAmount: number;
-  status: string;
-  orderStatus?: string;
+  shippingFee?: number;
+  status: string; // "Paid" | "Not Paid"
+  orderStatus: string; // "Order Received" | "In progress" | "In transient" | "customer received" | "Return"
   createdAt: Date;
   updatedAt?: Date;
 };
@@ -445,61 +449,149 @@ export async function saveCustomerWishlist(customerId: string, productIds: numbe
   }
 }
 
-/** Get all orders sorted by creation date descending */
+/** Get all orders sorted by creation date descending with relational order items */
 export async function getAllOrders(): Promise<OrderData[]> {
   try {
-    const list = await prisma.order.findMany({ orderBy: { createdAt: "desc" } });
+    const list = await prisma.order.findMany({
+      include: { items: true },
+      orderBy: { createdAt: "desc" },
+    });
     return list as unknown as OrderData[];
   } catch {
     return [];
   }
 }
 
-/** Create a new order (Order ID starts with 'O', e.g. O-1001) */
+/** Reduce product stock for items when an order status becomes Paid */
+export async function reduceProductStock(items: { productId: number; quantity: number; isKids?: boolean }[]) {
+  for (const item of items) {
+    try {
+      if (item.isKids) {
+        const kp = await prisma.kidsProduct.findUnique({ where: { id: item.productId } });
+        if (kp) {
+          const newQty = Math.max(0, kp.qty - item.quantity);
+          await prisma.kidsProduct.update({ where: { id: item.productId }, data: { qty: newQty } });
+        }
+      } else {
+        const p = await prisma.product.findUnique({ where: { id: item.productId } });
+        if (p) {
+          const newQty = Math.max(0, p.qty - item.quantity);
+          await prisma.product.update({ where: { id: item.productId }, data: { qty: newQty } });
+        }
+      }
+    } catch (err) {
+      console.error(`Failed to reduce stock for product #${item.productId}:`, err);
+    }
+  }
+}
+
+/** Create a new order with 1NF OrderItems (Order ID starts with 'O', e.g. O-1001) */
 export async function createOrder(data: {
   id?: string;
   customerId: string;
-  items?: OrderItem[];
+  items?: {
+    productId: number;
+    productName: string;
+    size?: string;
+    quantity: number;
+    unitPrice: number;
+    isKids?: boolean;
+  }[];
   totalAmount: number;
+  shippingFee?: number;
   status?: string;
   orderStatus?: string;
 }): Promise<OrderData> {
   const orderId = data.id || `O-${Math.floor(1000 + Math.random() * 9000)}`;
+  const status = data.status || "Not Paid";
+  const rawItems = data.items || [];
+
+  // Key Design Rule: itemId = orderId + "_" + productId + "_" + quantity
+  const itemsToCreate = rawItems.map((item) => {
+    const qty = item.quantity || 1;
+    const price = item.unitPrice || 0;
+    return {
+      itemId: `${orderId}_${item.productId}_${qty}`,
+      productId: item.productId,
+      isKids: item.isKids ?? false,
+      productName: item.productName || "Streetwear Product",
+      size: item.size || "S",
+      quantity: qty,
+      unitPrice: price,
+      subtotal: qty * price,
+    };
+  });
+
   try {
     const created = await prisma.order.create({
       data: {
         id: orderId,
         customerId: data.customerId,
-        items: data.items || [],
         totalAmount: data.totalAmount,
-        status: data.status || "Not Paid",
+        shippingFee: data.shippingFee || 0,
+        status,
         orderStatus: data.orderStatus || "Order Received",
+        items: {
+          create: itemsToCreate,
+        },
       },
+      include: { items: true },
     });
+
+    if (status === "Paid" && itemsToCreate.length > 0) {
+      await reduceProductStock(itemsToCreate);
+    }
+
     return created as unknown as OrderData;
   } catch {
+    if (status === "Paid" && itemsToCreate.length > 0) {
+      await reduceProductStock(itemsToCreate);
+    }
     return {
       id: orderId,
       customerId: data.customerId,
-      items: data.items || [],
+      items: itemsToCreate.map((it) => ({ ...it, orderId })),
       totalAmount: data.totalAmount,
-      status: data.status || "Not Paid",
+      shippingFee: data.shippingFee || 0,
+      status,
       orderStatus: data.orderStatus || "Order Received",
       createdAt: new Date(),
     };
   }
 }
 
-/** Update order details (payment status and/or orderStatus) */
-export async function updateOrderDetails(id: string, data: { status?: string; orderStatus?: string }): Promise<OrderData | null> {
+/** Update order details (payment status and/or orderStatus, triggers stock reduction on Paid) */
+export async function updateOrderDetails(
+  id: string,
+  data: { status?: string; orderStatus?: string }
+): Promise<OrderData | null> {
   try {
+    const existing = await prisma.order.findUnique({
+      where: { id },
+      include: { items: true },
+    });
+
     const updated = await prisma.order.update({
       where: { id },
       data,
+      include: { items: true },
     });
+
+    // Reduce stock when order payment status changes to Paid
+    if (data.status === "Paid" && existing?.status !== "Paid" && updated.items.length > 0) {
+      await reduceProductStock(updated.items);
+    }
+
     return updated as unknown as OrderData;
   } catch {
-    return { id, customerId: "customer@example.com", totalAmount: 0, status: data.status || "Not Paid", orderStatus: data.orderStatus || "Order Received", createdAt: new Date() };
+    return {
+      id,
+      customerId: "customer@example.com",
+      totalAmount: 0,
+      status: data.status || "Not Paid",
+      orderStatus: data.orderStatus || "Order Received",
+      createdAt: new Date(),
+    };
   }
 }
 
