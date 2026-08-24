@@ -1212,12 +1212,6 @@ export function AdminPortal() {
                               <span style={{ color: "var(--text2)" }}>Items Subtotal: </span>
                               <span style={{ fontWeight: 600 }}>₹{itemsSubtotal}</span>
                             </div>
-                            <div>
-                              <span style={{ color: "var(--text2)" }}>Shipping: </span>
-                              <span style={{ fontWeight: 600, color: "#16a34a" }}>
-                                {shippingFee > 0 ? `₹${shippingFee}` : "FREE"}
-                              </span>
-                            </div>
                             <div style={{ background: "var(--accent)", color: "#ffffff", padding: "4px 12px", borderRadius: 8, fontWeight: 800, fontSize: 14 }}>
                               Grand Total: ₹{ord.totalAmount}
                             </div>
