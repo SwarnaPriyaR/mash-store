@@ -1,19 +1,28 @@
-// app/api/auth/admin-login/route.ts — Validate client password against server-side ADMIN_PASSWORD
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { getIronSession } from "iron-session";
+import { sessionOptions, AdminSessionData } from "@/lib/session";
 
 export async function POST(req: Request) {
   try {
     const { password } = await req.json();
-    const inputPass = String(password);
     const expectedPass = process.env.ADMIN_PASSWORD;
 
-    if (inputPass && expectedPass && inputPass === expectedPass) {
-      return NextResponse.json({ success: true, message: "Access Granted" });
+    if (!expectedPass) {
+      return NextResponse.json({ error: "Authentication configuration error" }, { status: 500 });
     }
 
-    return NextResponse.json({ success: false, error: "Incorrect Password" }, { status: 401 });
-  } catch (err) {
-    console.error("Failed to validate admin password:", err);
-    return NextResponse.json({ success: false, error: "Authentication failed" }, { status: 500 });
+    if (!password || password !== expectedPass) {
+      return NextResponse.json({ error: "Incorrect admin password" }, { status: 401 });
+    }
+
+    const cookieStore = await cookies();
+    const session = await getIronSession<AdminSessionData>(cookieStore, sessionOptions);
+    session.isLoggedIn = true;
+    await session.save();
+
+    return NextResponse.json({ success: true, message: "Logged in successfully" });
+  } catch {
+    return NextResponse.json({ error: "Authentication failed" }, { status: 500 });
   }
 }
