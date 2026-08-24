@@ -12,7 +12,7 @@ export const sessionOptions: SessionOptions = {
     : defaultPassword,
   cookieName: "admin_session",
   cookieOptions: {
-    secure: process.env.NODE_ENV === "production",
+    secure: true,
     httpOnly: true,
     sameSite: "strict",
     path: "/",
