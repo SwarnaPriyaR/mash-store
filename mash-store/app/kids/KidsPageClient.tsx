@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Icon } from "@/components/Icon";
 import { useCart } from "@/components/CartProvider";
 import { useSale } from "@/components/SaleProvider";
-import { getSizeStock } from "@/lib/helpers";
+import { getSizeStock, getSalePrice } from "@/lib/helpers";
 import type { KidsProduct, Product } from "@/lib/db";
 
 interface Props {
@@ -119,8 +119,9 @@ export function KidsPageClient({ initialProducts }: Props) {
       ) : (
         <div className="product-grid">
             {filtered.map((p) => {
-              const price = isSaleOn ? Math.round(p.basePrice * (1 - sale.discount / 100)) : p.basePrice;
-              const onSale = isSaleOn && price < p.basePrice;
+              const salePrice = getSalePrice(p, sale, true);
+              const price = salePrice !== null ? salePrice : p.basePrice;
+              const onSale = salePrice !== null;
               const sizeStockMap = getSizeStock(p);
               const availableSizes = p.sizes || ["2–3 Years", "4–5 Years", "6–7 Years", "8–9 Years"];
 

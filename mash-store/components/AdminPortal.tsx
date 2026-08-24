@@ -85,6 +85,7 @@ export function AdminPortal() {
     discount: sale.discount || 20,
     durationHours: sale.durationHours || 24,
     mode: "instant" as "instant" | "scheduled",
+    target: (sale.target || "both") as "both" | "adult" | "kids",
     startTime: "",
   });
 
@@ -539,6 +540,7 @@ export function AdminPortal() {
       end: endMs,
       startTime: saleForm.mode === "scheduled" ? startMs : null,
       durationHours: saleForm.durationHours,
+      target: saleForm.target,
     });
 
     showToast(
@@ -927,6 +929,19 @@ export function AdminPortal() {
                   </div>
 
                   <div className="form-field">
+                    <label className="form-label">Apply Discount To *</label>
+                    <select
+                      className="form-input"
+                      value={saleForm.target}
+                      onChange={(e) => setSaleForm({ ...saleForm, target: e.target.value as "both" | "adult" | "kids" })}
+                    >
+                      <option value="both">Both Adult & Kids Products</option>
+                      <option value="adult">Only Adult Streetwear Products</option>
+                      <option value="kids">Only Kids Products</option>
+                    </select>
+                  </div>
+
+                  <div className="form-field">
                     <label className="form-label">Discount Percentage (%)</label>
                     <input
                       className="form-input"
@@ -978,20 +993,65 @@ export function AdminPortal() {
 
             {/* DISCOUNTED PRICES PREVIEW PANEL */}
             <div className="admin-card">
-              <div className="admin-card-title">📊 Prices Preview Panel ({saleForm.discount}% Discount)</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12 }}>
-                {products.map((p) => {
-                  const saleP = Math.round(p.basePrice * (1 - saleForm.discount / 100));
-                  return (
-                    <div key={p.id} style={{ background: "var(--bg2)", borderRadius: 10, border: "1px solid var(--border)", padding: "12px 14px" }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{p.name}</div>
-                      <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
-                        <span style={{ fontFamily: "var(--font-bebas), 'Bebas Neue', sans-serif", fontSize: 18, color: "var(--accent)" }}>₹{saleP}</span>
-                        <span style={{ fontSize: 12, color: "var(--text2)", textDecoration: "line-through" }}>₹{p.basePrice}</span>
+              <div className="admin-card-title">
+                📊 Prices Preview Panel ({saleForm.discount}% Discount — {saleForm.target === "both" ? "Both Adult & Kids" : saleForm.target === "adult" ? "Only Adult Products" : "Only Kids Products"})
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 14 }}>
+                {/* ADULT PRODUCTS PREVIEW */}
+                {(saleForm.target === "both" || saleForm.target === "adult") &&
+                  products.map((p) => {
+                    const saleP = Math.round(p.basePrice * (1 - saleForm.discount / 100));
+                    return (
+                      <div key={`adult_${p.id}`} style={{ background: "var(--bg2)", borderRadius: 10, border: "1px solid var(--border)", padding: "14px 16px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, background: "rgba(200,75,47,0.15)", color: "var(--accent)", padding: "2px 8px", borderRadius: 4 }}>
+                            🛍️ Adult Tee #{p.id}
+                          </span>
+                          <span style={{ fontSize: 11, color: "var(--text2)", fontWeight: 600 }}>{p.fit}</span>
+                        </div>
+                        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8, color: "var(--text)" }}>{p.name}</div>
+                        <div style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
+                          <span style={{ fontFamily: "var(--font-bebas), 'Bebas Neue', sans-serif", fontSize: 22, color: "var(--accent)", fontWeight: 800 }}>
+                            ₹{saleP}
+                          </span>
+                          <span style={{ fontSize: 13, color: "var(--text2)", textDecoration: "line-through", fontWeight: 600 }}>
+                            ₹{p.basePrice}
+                          </span>
+                          <span style={{ fontSize: 11, color: "#16a34a", fontWeight: 700, marginLeft: "auto" }}>
+                            Save ₹{p.basePrice - saleP}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+
+                {/* KIDS PRODUCTS PREVIEW */}
+                {(saleForm.target === "both" || saleForm.target === "kids") &&
+                  kidsProducts.map((kp) => {
+                    const saleP = Math.round(kp.basePrice * (1 - saleForm.discount / 100));
+                    return (
+                      <div key={`kids_${kp.id}`} style={{ background: "var(--bg2)", borderRadius: 10, border: "1px solid var(--border)", padding: "14px 16px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, background: "rgba(16,185,129,0.15)", color: "#10b981", padding: "2px 8px", borderRadius: 4 }}>
+                            🎈 Kids Item #{kp.id}
+                          </span>
+                          <span style={{ fontSize: 11, color: "var(--text2)", fontWeight: 600 }}>{kp.tags?.[0] || "Kids"}</span>
+                        </div>
+                        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8, color: "var(--text)" }}>{kp.name}</div>
+                        <div style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
+                          <span style={{ fontFamily: "var(--font-bebas), 'Bebas Neue', sans-serif", fontSize: 22, color: "var(--accent)", fontWeight: 800 }}>
+                            ₹{saleP}
+                          </span>
+                          <span style={{ fontSize: 13, color: "var(--text2)", textDecoration: "line-through", fontWeight: 600 }}>
+                            ₹{kp.basePrice}
+                          </span>
+                          <span style={{ fontSize: 11, color: "#16a34a", fontWeight: 700, marginLeft: "auto" }}>
+                            Save ₹{kp.basePrice - saleP}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             </div>
           </div>

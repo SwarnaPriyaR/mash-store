@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Icon } from "@/components/Icon";
 import { useCart } from "@/components/CartProvider";
 import { useSale } from "@/components/SaleProvider";
-import { convertDriveUrl, getSizeStock } from "@/lib/helpers";
+import { convertDriveUrl, getSizeStock, getSalePrice } from "@/lib/helpers";
 import { UnderConstructionSection } from "@/components/UnderConstructionSection";
 import type { Product } from "@/lib/db";
 
@@ -35,14 +35,10 @@ export function ProductsClient() {
   }, []);
 
   useEffect(() => {
-    if (!sale.active) return;
     setProducts((prev) =>
       prev.map((p) => {
-        const now = Date.now();
-        if (sale.active && now >= sale.start && now <= sale.end) {
-          return { ...p, price: Math.round(p.basePrice * (1 - sale.discount / 100)) };
-        }
-        return { ...p, price: p.basePrice };
+        const salePrice = getSalePrice(p, sale, false);
+        return { ...p, price: salePrice !== null ? salePrice : p.basePrice };
       })
     );
   }, [sale]);
