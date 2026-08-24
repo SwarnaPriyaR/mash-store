@@ -79,10 +79,7 @@ export function ProductsClient() {
   return (
     <div className="products-page" style={{ paddingTop: 96 }}>
       <div className="products-header">
-        <h1 className="products-title">Customize Tshirts</h1>
-        <p className="products-sub">
-          {filtered.length} style{filtered.length !== 1 ? "s" : ""} shown — Customize & order signature streetwear
-        </p>
+        <h1 className="products-title">ALL DROPS</h1>
       </div>
 
       {/* UNDER CONSTRUCTION SECTION WITH COUNTDOWN & EMAIL NOTIFY (MATCHING REFERENCE DESIGN) */}

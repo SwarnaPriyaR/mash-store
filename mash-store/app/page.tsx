@@ -28,7 +28,7 @@ export default function HomePage() {
         </p>
         <div style={{ display: "flex", gap: "16px", justifyContent: "center", alignItems: "center", flexWrap: "wrap" }}>
           <Link href="/products" className="cta-btn" style={{ textDecoration: "none" }}>
-            View Products →
+            All Drops →
           </Link>
           <Link
             href="/kids"
