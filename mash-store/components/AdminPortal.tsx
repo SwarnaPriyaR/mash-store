@@ -71,18 +71,19 @@ export function AdminPortal() {
 
   const [orderItems, setOrderItems] = useState<{
     productId: number;
-    name: string;
-    price: number;
-    qty: number;
+    productName: string;
+    unitPrice: number;
+    quantity: number;
     size: string;
     isKids: boolean;
   }[]>([]);
+  const [orderIdFilter, setOrderIdFilter] = useState("");
 
   const [editValues, setEditValues] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (orderItems.length > 0) {
-      const calculated = orderItems.reduce((s, item) => s + item.price * item.qty, 0);
+      const calculated = orderItems.reduce((s, item) => s + item.unitPrice * item.quantity, 0);
       setNewOrder((prev) => ({ ...prev, totalAmount: String(calculated) }));
     }
   }, [orderItems]);
@@ -388,11 +389,17 @@ export function AdminPortal() {
       setNewOrder({ id: "", customerId: "", totalAmount: "", status: "Not Paid", orderStatus: "Order Received" });
       setOrderItems([]);
       setExpandOrderForm(false);
+
+      if (newOrder.status === "Paid") {
+        await refreshProducts();
+        await refreshKidsProducts();
+      }
+
       showToast(`🎉 Order ${created.id} created successfully!`);
     } catch (err) {
       showToast(`❌ Failed to create order: ${String(err)}`);
     }
-  }, [newOrder, orderItems, showToast]);
+  }, [newOrder, orderItems, showToast, refreshProducts, refreshKidsProducts]);
 
   const handleUpdateOrder = useCallback(async (id: string, updates: { status?: string; orderStatus?: string }) => {
     setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, ...updates } : o)));
@@ -402,12 +409,19 @@ export function AdminPortal() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updates),
       });
-      showToast(`⚡ Order ${id} updated`);
+
+      if (updates.status === "Paid") {
+        await refreshProducts();
+        await refreshKidsProducts();
+        showToast(`⚡ Order ${id} marked as Paid & Product Stock updated!`);
+      } else {
+        showToast(`⚡ Order ${id} updated`);
+      }
     } catch {
       showToast("❌ Failed to update order");
       await refreshOrders();
     }
-  }, [showToast, refreshOrders]);
+  }, [showToast, refreshOrders, refreshProducts, refreshKidsProducts]);
 
   const handleRemoveOrder = useCallback(async (id: string) => {
     setOrders((prev) => prev.filter((o) => o.id !== id));
@@ -821,9 +835,9 @@ export function AdminPortal() {
                             ...prev,
                             {
                               productId: firstProd.id,
-                              name: firstProd.name,
-                              price: firstProd.basePrice,
-                              qty: 1,
+                              productName: firstProd.name,
+                              unitPrice: firstProd.basePrice,
+                              quantity: 1,
                               size: defaultSize,
                               isKids,
                             },
@@ -866,7 +880,7 @@ export function AdminPortal() {
                                       setOrderItems((prev) =>
                                         prev.map((it, i) =>
                                           i === idx
-                                            ? { ...it, productId: p.id, name: p.name, price: p.basePrice, isKids: false, size: p.sizes?.[0] || "S" }
+                                            ? { ...it, productId: p.id, productName: p.name, unitPrice: p.basePrice, isKids: false, size: p.sizes?.[0] || "S" }
                                             : it
                                         )
                                       );
@@ -877,7 +891,7 @@ export function AdminPortal() {
                                       setOrderItems((prev) =>
                                         prev.map((it, i) =>
                                           i === idx
-                                            ? { ...it, productId: kp.id, name: kp.name, price: kp.basePrice, isKids: true, size: kp.sizes?.[0] || "2–3 Years" }
+                                            ? { ...it, productId: kp.id, productName: kp.name, unitPrice: kp.basePrice, isKids: true, size: kp.sizes?.[0] || "2–3 Years" }
                                             : it
                                         )
                                       );
@@ -925,10 +939,10 @@ export function AdminPortal() {
                               <input
                                 type="number"
                                 min="1"
-                                value={item.qty}
+                                value={item.quantity}
                                 onChange={(e) => {
                                   const q = parseInt(e.target.value) || 1;
-                                  setOrderItems((prev) => prev.map((it, i) => (i === idx ? { ...it, qty: q } : it)));
+                                  setOrderItems((prev) => prev.map((it, i) => (i === idx ? { ...it, quantity: q } : it)));
                                 }}
                                 style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid var(--border)", fontSize: 12, fontWeight: 600, background: "var(--bg)", color: "var(--text)" }}
                               />
@@ -937,7 +951,7 @@ export function AdminPortal() {
                             {/* SUBTOTAL */}
                             <div>
                               <label style={{ fontSize: 11, fontWeight: 700, display: "block", marginBottom: 4 }}>Subtotal</label>
-                              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)" }}>₹{item.price * item.qty}</span>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)" }}>₹{item.unitPrice * item.quantity}</span>
                             </div>
 
                             {/* REMOVE ITEM BUTTON */}
@@ -990,124 +1004,228 @@ export function AdminPortal() {
               </form>
             )}
 
-            {/* ORDERS TABLE */}
+            {/* ORDERS MANAGEMENT CONTAINER */}
             <div className="admin-card">
-              <div className="admin-card-title">📋 Orders Directory ({orders.length} orders)</div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
+                <div className="admin-card-title" style={{ margin: 0 }}>
+                  📋 Orders Directory ({orders.length} orders)
+                </div>
+
+                {/* FILTER BY ORDER ID */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <label style={{ fontSize: 13, fontWeight: 700, color: "var(--text2)" }}>Filter Order ID:</label>
+                  <input
+                    className="form-input"
+                    style={{ padding: "6px 12px", fontSize: 12, width: 180 }}
+                    placeholder="Search e.g. O-1001"
+                    value={orderIdFilter}
+                    onChange={(e) => setOrderIdFilter(e.target.value)}
+                  />
+                  {orderIdFilter && (
+                    <button
+                      type="button"
+                      onClick={() => setOrderIdFilter("")}
+                      style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg2)", fontSize: 11, cursor: "pointer" }}
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {orders.length === 0 ? (
                 <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--text2)", fontSize: 14 }}>
                   No orders recorded yet. Click "ADD MANUAL ORDER" above to create your first order entry.
                 </div>
               ) : (
-                <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                    <thead>
-                      <tr style={{ background: "var(--bg2)", borderBottom: "1.5px solid var(--border)", textAlign: "left" }}>
-                        <th style={{ padding: "12px 16px", fontWeight: 700 }}>Order ID</th>
-                        <th style={{ padding: "12px 16px", fontWeight: 700 }}>Customer ID / Email</th>
-                        <th style={{ padding: "12px 16px", fontWeight: 700 }}>Ordered Products / Items</th>
-                        <th style={{ padding: "12px 16px", fontWeight: 700 }}>Date</th>
-                        <th style={{ padding: "12px 16px", fontWeight: 700 }}>Total Amount</th>
-                        <th style={{ padding: "12px 16px", fontWeight: 700 }}>Payment Status</th>
-                        <th style={{ padding: "12px 16px", fontWeight: 700 }}>Order Status</th>
-                        <th style={{ padding: "12px 16px", fontWeight: 700, textAlign: "right" }}>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {orders.map((ord) => (
-                        <tr key={ord.id} style={{ borderBottom: "1px solid var(--border)" }}>
-                          <td style={{ padding: "12px 16px", fontWeight: 700, color: "var(--accent)" }}>{ord.id}</td>
-                          <td style={{ padding: "12px 16px", fontWeight: 500 }}>{ord.customerId}</td>
+                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                  {orders
+                    .filter((o) => o.id.toLowerCase().includes(orderIdFilter.toLowerCase().trim()))
+                    .map((ord) => {
+                      const itemsList = ord.items || [];
+                      const itemsSubtotal = itemsList.reduce((sum, item) => sum + (item.subtotal || item.quantity * item.unitPrice), 0);
+                      const shippingFee = ord.shippingFee || 0;
 
-                          {/* ORDERED PRODUCTS / ITEMS BADGES */}
-                          <td style={{ padding: "12px 16px", maxWidth: 280 }}>
-                            {ord.items && ord.items.length > 0 ? (
-                              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                                {ord.items.map((it, i) => (
-                                  <div
-                                    key={i}
-                                    style={{
-                                      fontSize: 11,
-                                      fontWeight: 600,
-                                      background: "var(--bg2)",
-                                      border: "1px solid var(--border)",
-                                      padding: "4px 8px",
-                                      borderRadius: 6,
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: 6,
-                                    }}
-                                  >
-                                    <span>{it.isKids ? "🎈" : "🛍️"}</span>
-                                    <span>
-                                      [#{it.productId}] <strong>{it.name}</strong> ({it.size || "S"}) × {it.qty} = ₹{it.price * it.qty}
-                                    </span>
-                                  </div>
-                                ))}
+                      return (
+                        <div
+                          key={ord.id}
+                          style={{
+                            border: "1.5px solid var(--border)",
+                            borderRadius: 12,
+                            background: "var(--bg)",
+                            overflow: "hidden",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                          }}
+                        >
+                          {/* MASTER VIEW HEADER */}
+                          <div
+                            style={{
+                              background: "var(--bg2)",
+                              padding: "14px 18px",
+                              borderBottom: "1.5px solid var(--border)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              flexWrap: "wrap",
+                              gap: 12,
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+                              <span style={{ fontWeight: 800, fontSize: 15, color: "var(--accent)" }}>
+                                📦 {ord.id}
+                              </span>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>
+                                👤 {ord.customerId}
+                              </span>
+                              <span style={{ fontSize: 12, color: "var(--text2)" }}>
+                                📅 {ord.createdAt ? new Date(ord.createdAt).toLocaleDateString("en-IN") : "Today"}
+                              </span>
+                            </div>
+
+                            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                              {/* PAYMENT STATUS DROPDOWN */}
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text2)" }}>PAYMENT:</span>
+                                <select
+                                  value={ord.status}
+                                  onChange={(e) => handleUpdateOrder(ord.id, { status: e.target.value })}
+                                  style={{
+                                    padding: "5px 10px",
+                                    borderRadius: 6,
+                                    border: ord.status === "Paid" ? "1.5px solid #16a34a" : "1.5px solid #dc2626",
+                                    background: ord.status === "Paid" ? "#dcfce7" : "#fee2e2",
+                                    color: ord.status === "Paid" ? "#15803d" : "#991b1b",
+                                    fontWeight: 700,
+                                    fontSize: 12,
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  <option value="Paid">Paid</option>
+                                  <option value="Not Paid">Not Paid</option>
+                                </select>
+                              </div>
+
+                              {/* ORDER STATUS DROPDOWN */}
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text2)" }}>STATUS:</span>
+                                <select
+                                  value={ord.orderStatus || "Order Received"}
+                                  onChange={(e) => handleUpdateOrder(ord.id, { orderStatus: e.target.value })}
+                                  style={{
+                                    padding: "5px 10px",
+                                    borderRadius: 6,
+                                    border: "1px solid var(--border)",
+                                    background: "var(--bg)",
+                                    color: "var(--text)",
+                                    fontWeight: 600,
+                                    fontSize: 12,
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  <option value="Order Received">Order Received</option>
+                                  <option value="In progress">In progress</option>
+                                  <option value="In transient">In transient</option>
+                                  <option value="customer received">customer received</option>
+                                  <option value="Return">Return</option>
+                                </select>
+                              </div>
+
+                              <button
+                                className="admin-del-btn"
+                                onClick={() => handleRemoveOrder(ord.id)}
+                                title="Delete Order"
+                                style={{ padding: "6px 10px" }}
+                              >
+                                <Icon.Trash />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* ITEM GRID (SUB-TABLE) */}
+                          <div style={{ padding: "12px 18px" }}>
+                            <div style={{ fontWeight: 700, fontSize: 12, textTransform: "uppercase", color: "var(--text2)", marginBottom: 8 }}>
+                              🛒 Order Items Grid ({itemsList.length} products)
+                            </div>
+
+                            {itemsList.length === 0 ? (
+                              <div style={{ fontSize: 13, color: "var(--text2)", fontStyle: "italic", padding: "8px 0" }}>
+                                No product rows attached to this order.
                               </div>
                             ) : (
-                              <span style={{ fontSize: 12, color: "var(--text2)", fontStyle: "italic" }}>No items recorded</span>
+                              <div style={{ overflowX: "auto" }}>
+                                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                                  <thead>
+                                    <tr style={{ background: "var(--bg2)", borderBottom: "1px solid var(--border)", textAlign: "left" }}>
+                                      <th style={{ padding: "8px 12px", fontWeight: 700 }}>Item ID (PK)</th>
+                                      <th style={{ padding: "8px 12px", fontWeight: 700 }}>Product Name</th>
+                                      <th style={{ padding: "8px 12px", fontWeight: 700 }}>Size</th>
+                                      <th style={{ padding: "8px 12px", fontWeight: 700 }}>Quantity</th>
+                                      <th style={{ padding: "8px 12px", fontWeight: 700 }}>Unit Price</th>
+                                      <th style={{ padding: "8px 12px", fontWeight: 700, textAlign: "right" }}>Total Price</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {itemsList.map((it, idx) => {
+                                      const itemIdFormatted = it.itemId || `${ord.id}_${it.productId}_${it.quantity}`;
+                                      const subtotalVal = it.subtotal || it.quantity * it.unitPrice;
+
+                                      return (
+                                        <tr key={idx} style={{ borderBottom: "1px solid var(--border)" }}>
+                                          <td style={{ padding: "8px 12px", fontFamily: "monospace", fontSize: 11, color: "var(--accent)" }}>
+                                            {itemIdFormatted}
+                                          </td>
+                                          <td style={{ padding: "8px 12px", fontWeight: 600 }}>
+                                            {it.isKids ? "🎈 " : "🛍️ "}{it.productName}
+                                          </td>
+                                          <td style={{ padding: "8px 12px" }}>
+                                            <span style={{ background: "var(--bg2)", border: "1px solid var(--border)", padding: "2px 6px", borderRadius: 4, fontWeight: 700, fontSize: 11 }}>
+                                              {it.size}
+                                            </span>
+                                          </td>
+                                          <td style={{ padding: "8px 12px", fontWeight: 700 }}>{it.quantity}</td>
+                                          <td style={{ padding: "8px 12px" }}>₹{it.unitPrice}</td>
+                                          <td style={{ padding: "8px 12px", fontWeight: 700, color: "var(--accent)", textAlign: "right" }}>
+                                            ₹{subtotalVal}
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
                             )}
-                          </td>
+                          </div>
 
-                          <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--text2)" }}>
-                            {ord.createdAt ? new Date(ord.createdAt).toLocaleDateString("en-IN") : "Today"}
-                          </td>
-                          <td style={{ padding: "12px 16px", fontWeight: 700 }}>₹{ord.totalAmount}</td>
-
-                          {/* PAYMENT STATUS DROPDOWN */}
-                          <td style={{ padding: "12px 16px" }}>
-                            <select
-                              value={ord.status}
-                              onChange={(e) => handleUpdateOrder(ord.id, { status: e.target.value })}
-                              style={{
-                                padding: "6px 10px",
-                                borderRadius: 6,
-                                border: ord.status === "Paid" ? "1.5px solid #16a34a" : "1.5px solid #dc2626",
-                                background: ord.status === "Paid" ? "#dcfce7" : "#fee2e2",
-                                color: ord.status === "Paid" ? "#15803d" : "#991b1b",
-                                fontWeight: 700,
-                                fontSize: 12,
-                                cursor: "pointer",
-                              }}
-                            >
-                              <option value="Paid">Paid</option>
-                              <option value="Not Paid">Not Paid</option>
-                            </select>
-                          </td>
-
-                          {/* ORDER STATUS DROPDOWN */}
-                          <td style={{ padding: "12px 16px" }}>
-                            <select
-                              value={ord.orderStatus || "Order Received"}
-                              onChange={(e) => handleUpdateOrder(ord.id, { orderStatus: e.target.value })}
-                              style={{
-                                padding: "6px 10px",
-                                borderRadius: 6,
-                                border: "1px solid var(--border)",
-                                background: "var(--bg2)",
-                                color: "var(--text)",
-                                fontWeight: 600,
-                                fontSize: 12,
-                                cursor: "pointer",
-                              }}
-                            >
-                              <option value="Order Received">Order Received</option>
-                              <option value="In progress">In progress</option>
-                              <option value="In transient">In transient</option>
-                              <option value="customer received">customer received</option>
-                              <option value="Return">Return</option>
-                            </select>
-                          </td>
-
-                          <td style={{ padding: "12px 16px", textAlign: "right" }}>
-                            <button className="admin-del-btn" onClick={() => handleRemoveOrder(ord.id)}>
-                              <Icon.Trash />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          {/* SUMMARY FOOTER */}
+                          <div
+                            style={{
+                              background: "var(--bg2)",
+                              padding: "10px 18px",
+                              borderTop: "1px solid var(--border)",
+                              display: "flex",
+                              justifyContent: "flex-end",
+                              alignItems: "center",
+                              gap: 20,
+                              fontSize: 13,
+                            }}
+                          >
+                            <div>
+                              <span style={{ color: "var(--text2)" }}>Items Subtotal: </span>
+                              <span style={{ fontWeight: 600 }}>₹{itemsSubtotal}</span>
+                            </div>
+                            <div>
+                              <span style={{ color: "var(--text2)" }}>Shipping: </span>
+                              <span style={{ fontWeight: 600, color: "#16a34a" }}>
+                                {shippingFee > 0 ? `₹${shippingFee}` : "FREE"}
+                              </span>
+                            </div>
+                            <div style={{ background: "var(--accent)", color: "#ffffff", padding: "4px 12px", borderRadius: 8, fontWeight: 800, fontSize: 14 }}>
+                              Grand Total: ₹{ord.totalAmount}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                 </div>
               )}
             </div>
