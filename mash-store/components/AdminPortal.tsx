@@ -627,7 +627,6 @@ export function AdminPortal() {
       <aside className="admin-sidebar">
         <div className="admin-sidebar-top">
           <div className="admin-sidebar-logo" onClick={() => setCurrentSection("dashboard")} style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
-            <img src="/asset/mashLogo.png" alt="MASH" style={{ height: 34, width: 34, borderRadius: 6, objectFit: "cover" }} />
             <img src="/asset/logoLight.png" alt="MASH" style={{ height: 34, width: "auto", objectFit: "contain" }} />
             <span style={{ fontSize: "14px", background: "var(--accent)", color: "#fff", padding: "2px 8px", borderRadius: "4px" }}>ADMIN</span>
           </div>
