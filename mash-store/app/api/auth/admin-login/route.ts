@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     session.isLoggedIn = true;
     await session.save();
 
-    return NextResponse.json({ success: true, message: "Admin authenticated via iron-session" });
+    return NextResponse.json({ success: true, message: "Logged in successfully" });
   } catch (err: unknown) {
     return NextResponse.json({ error: "Authentication failed", detail: String(err) }, { status: 500 });
   }

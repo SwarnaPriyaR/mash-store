@@ -8,7 +8,7 @@ export async function POST() {
     const cookieStore = await cookies();
     const session = await getIronSession<AdminSessionData>(cookieStore, sessionOptions);
     session.destroy();
-    return NextResponse.json({ success: true, message: "Logged out via iron-session" });
+    return NextResponse.json({ success: true, message: "Logged out" });
   } catch (err: unknown) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
