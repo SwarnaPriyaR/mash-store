@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import crypto from "crypto";
+import { getIronSession } from "iron-session";
+import { sessionOptions, AdminSessionData } from "@/lib/session";
 
 export async function GET() {
   try {
@@ -9,13 +10,10 @@ export async function GET() {
       return NextResponse.json({ authed: false });
     }
 
-    const secretSalt = process.env.ADMIN_SECRET_SALT || expectedPass;
-    const expectedToken = crypto.createHash("sha256").update(`${expectedPass}_${secretSalt}`).digest("hex");
-
     const cookieStore = await cookies();
-    const token = cookieStore.get("admin_session")?.value;
+    const session = await getIronSession<AdminSessionData>(cookieStore, sessionOptions);
 
-    if (token && token === expectedToken) {
+    if (session.isLoggedIn === true) {
       return NextResponse.json({ authed: true });
     }
 

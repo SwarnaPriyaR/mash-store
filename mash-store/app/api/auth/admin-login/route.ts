@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import crypto from "crypto";
+import { getIronSession } from "iron-session";
+import { sessionOptions, AdminSessionData } from "@/lib/session";
 
 export async function POST(req: Request) {
   try {
@@ -15,20 +16,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Incorrect admin password" }, { status: 401 });
     }
 
-    // Generate secure session token hash using environment secret salt
-    const secretSalt = process.env.ADMIN_SECRET_SALT || expectedPass;
-    const sessionToken = crypto.createHash("sha256").update(`${expectedPass}_${secretSalt}`).digest("hex");
-
     const cookieStore = await cookies();
-    cookieStore.set("admin_session", sessionToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/",
-      maxAge: 60 * 60 * 24, // 24 hours
-    });
+    const session = await getIronSession<AdminSessionData>(cookieStore, sessionOptions);
+    session.isLoggedIn = true;
+    await session.save();
 
-    return NextResponse.json({ success: true, message: "Admin authenticated" });
+    return NextResponse.json({ success: true, message: "Admin authenticated via iron-session" });
   } catch (err: unknown) {
     return NextResponse.json({ error: "Authentication failed", detail: String(err) }, { status: 500 });
   }
