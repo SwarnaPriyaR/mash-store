@@ -426,10 +426,14 @@ export function AdminPortal() {
         body: JSON.stringify(updates),
       });
 
-      if (updates.status === "Paid") {
+      if (updates.status) {
         await refreshProducts();
         await refreshKidsProducts();
-        showToast(`⚡ Order ${id} marked as Paid & Product Stock updated!`);
+        if (updates.status === "Paid") {
+          showToast(`⚡ Order ${id} marked as Paid & Stock reduced!`);
+        } else if (updates.status === "Not Paid") {
+          showToast(`⚡ Order ${id} marked as Not Paid & Stock restored!`);
+        }
       } else {
         showToast(`⚡ Order ${id} updated`);
       }
