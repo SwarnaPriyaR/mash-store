@@ -26,9 +26,6 @@ export function AdminPortal() {
 
   useEffect(() => {
     setMounted(true);
-    if (typeof window !== "undefined" && sessionStorage.getItem("admin_authed") === "true") {
-      setAuthed(true);
-    }
   }, []);
 
   // Adult Product Form state
