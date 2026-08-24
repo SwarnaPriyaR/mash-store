@@ -443,11 +443,77 @@ export function AdminPortal() {
     setOrders((prev) => prev.filter((o) => o.id !== id));
     try {
       await fetch(`/api/orders/removeOrder/${id}`, { method: "DELETE" });
-      showToast(`🗑 Order ${id} removed`);
+      showToast(`🗑️ Order ${id} deleted`);
     } catch {
+      showToast("❌ Failed to delete order");
       await refreshOrders();
     }
   }, [showToast, refreshOrders]);
+
+  const handleAddItemToOrder = useCallback(async (
+    orderId: string,
+    selectedProductKey: string,
+    selectedSize: string,
+    quantity: number
+  ) => {
+    if (!selectedProductKey) {
+      showToast("❌ Please select a product to add");
+      return;
+    }
+
+    const [type, idStr] = selectedProductKey.split("_");
+    const id = parseInt(idStr);
+    let pName = "";
+    let pPrice = 0;
+    let isKids = false;
+
+    if (type === "adult") {
+      const p = products.find((x) => x.id === id);
+      if (p) {
+        pName = p.name;
+        pPrice = p.basePrice;
+      }
+    } else {
+      const kp = kidsProducts.find((x) => x.id === id);
+      if (kp) {
+        pName = kp.name;
+        pPrice = kp.basePrice;
+        isKids = true;
+      }
+    }
+
+    if (!pName) return;
+
+    try {
+      const res = await fetch("/api/orders/addItem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId,
+          productId: id,
+          productName: pName,
+          size: selectedSize,
+          quantity,
+          unitPrice: pPrice,
+          isKids,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to add order item");
+      const updated: OrderData = await res.json();
+
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? updated : o)));
+
+      if (updated.status === "Paid") {
+        await refreshProducts();
+        await refreshKidsProducts();
+      }
+
+      showToast(`🎉 Item added to Order ${orderId}!`);
+    } catch (err) {
+      showToast(`❌ Failed to add order item: ${String(err)}`);
+    }
+  }, [products, kidsProducts, showToast, refreshProducts, refreshKidsProducts]);
 
   if (!mounted) return null;
 
@@ -823,167 +889,15 @@ export function AdminPortal() {
                   </div>
 
                   <div className="form-field">
-                    <label className="form-label">Total Amount Paid / Due (INR) * (Auto-Calculated)</label>
+                    <label className="form-label">Total Amount Paid / Due (INR) *</label>
                     <input
                       className="form-input"
                       type="number"
-                      placeholder="Auto-calculated or enter custom total e.g. 1499"
+                      placeholder="e.g. 1499"
                       value={newOrder.totalAmount}
                       onChange={(e) => setNewOrder({ ...newOrder, totalAmount: e.target.value })}
                       required
                     />
-                  </div>
-
-                  {/* SELECT ORDERED PRODUCTS / ITEMS */}
-                  <div style={{ gridColumn: "1 / -1", background: "var(--bg2)", border: "1px solid var(--border)", padding: 16, borderRadius: 12, marginTop: 8, marginBottom: 8 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                      <span style={{ fontWeight: 700, fontSize: 13, textTransform: "uppercase", color: "var(--text)" }}>
-                        🛍️ Ordered Products / Items Selection ({orderItems.length} selected)
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const firstProd = products[0] || kidsProducts[0];
-                          if (!firstProd) return;
-                          const isKids = !('fit' in firstProd);
-                          const defaultSize = firstProd.sizes?.[0] || (isKids ? "2–3 Years" : "S");
-                          setOrderItems((prev) => [
-                            ...prev,
-                            {
-                              productId: firstProd.id,
-                              productName: firstProd.name,
-                              unitPrice: firstProd.basePrice,
-                              quantity: 1,
-                              size: defaultSize,
-                              isKids,
-                            },
-                          ]);
-                        }}
-                        style={{
-                          padding: "6px 12px",
-                          borderRadius: 8,
-                          border: "none",
-                          background: "var(--accent)",
-                          color: "#ffffff",
-                          fontWeight: 600,
-                          fontSize: 12,
-                          cursor: "pointer",
-                        }}
-                      >
-                        ➕ Add Product Item
-                      </button>
-                    </div>
-
-                    {orderItems.length === 0 ? (
-                      <div style={{ fontSize: 13, color: "var(--text2)", fontStyle: "italic" }}>
-                        No products added yet. Click "➕ Add Product Item" to select products and auto-calculate total amount.
-                      </div>
-                    ) : (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                        {orderItems.map((item, idx) => (
-                          <div key={idx} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr auto", gap: 10, alignItems: "center", background: "var(--bg)", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--border)" }}>
-                            {/* PRODUCT SELECTOR */}
-                            <div>
-                              <label style={{ fontSize: 11, fontWeight: 700, display: "block", marginBottom: 4 }}>Product</label>
-                              <select
-                                value={`${item.isKids ? "kids" : "adult"}_${item.productId}`}
-                                onChange={(e) => {
-                                  const [type, idStr] = e.target.value.split("_");
-                                  const id = parseInt(idStr);
-                                  if (type === "adult") {
-                                    const p = products.find((x) => x.id === id);
-                                    if (p) {
-                                      setOrderItems((prev) =>
-                                        prev.map((it, i) =>
-                                          i === idx
-                                            ? { ...it, productId: p.id, productName: p.name, unitPrice: p.basePrice, isKids: false, size: p.sizes?.[0] || "S" }
-                                            : it
-                                        )
-                                      );
-                                    }
-                                  } else {
-                                    const kp = kidsProducts.find((x) => x.id === id);
-                                    if (kp) {
-                                      setOrderItems((prev) =>
-                                        prev.map((it, i) =>
-                                          i === idx
-                                            ? { ...it, productId: kp.id, productName: kp.name, unitPrice: kp.basePrice, isKids: true, size: kp.sizes?.[0] || "2–3 Years" }
-                                            : it
-                                        )
-                                      );
-                                    }
-                                  }
-                                }}
-                                style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid var(--border)", fontSize: 12, fontWeight: 600, background: "var(--bg)", color: "var(--text)" }}
-                              >
-                                <optgroup label="Adult Streetwear T-Shirts">
-                                  {products.map((p) => (
-                                    <option key={`adult_${p.id}`} value={`adult_${p.id}`}>
-                                      [Adult #{p.id}] {p.name} — ₹{p.basePrice}
-                                    </option>
-                                  ))}
-                                </optgroup>
-                                <optgroup label="Kids Products">
-                                  {kidsProducts.map((kp) => (
-                                    <option key={`kids_${kp.id}`} value={`kids_${kp.id}`}>
-                                      [Kids #{kp.id}] {kp.name} — ₹{kp.basePrice}
-                                    </option>
-                                  ))}
-                                </optgroup>
-                              </select>
-                            </div>
-
-                            {/* SIZE SELECTOR */}
-                            <div>
-                              <label style={{ fontSize: 11, fontWeight: 700, display: "block", marginBottom: 4 }}>Size</label>
-                              <select
-                                value={item.size}
-                                onChange={(e) =>
-                                  setOrderItems((prev) => prev.map((it, i) => (i === idx ? { ...it, size: e.target.value } : it)))
-                                }
-                                style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid var(--border)", fontSize: 12, background: "var(--bg)", color: "var(--text)" }}
-                              >
-                                {(item.isKids ? ["2–3 Years", "4–5 Years", "6–7 Years", "8–9 Years"] : ["S", "M", "L", "XL"]).map((sz) => (
-                                  <option key={sz} value={sz}>{sz}</option>
-                                ))}
-                              </select>
-                            </div>
-
-                            {/* QTY INPUT */}
-                            <div>
-                              <label style={{ fontSize: 11, fontWeight: 700, display: "block", marginBottom: 4 }}>Qty</label>
-                              <input
-                                type="number"
-                                min="1"
-                                value={item.quantity}
-                                onChange={(e) => {
-                                  const q = parseInt(e.target.value) || 1;
-                                  setOrderItems((prev) => prev.map((it, i) => (i === idx ? { ...it, quantity: q } : it)));
-                                }}
-                                style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid var(--border)", fontSize: 12, fontWeight: 600, background: "var(--bg)", color: "var(--text)" }}
-                              />
-                            </div>
-
-                            {/* SUBTOTAL */}
-                            <div>
-                              <label style={{ fontSize: 11, fontWeight: 700, display: "block", marginBottom: 4 }}>Subtotal</label>
-                              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)" }}>₹{item.unitPrice * item.quantity}</span>
-                            </div>
-
-                            {/* REMOVE ITEM BUTTON */}
-                            <div>
-                              <button
-                                type="button"
-                                onClick={() => setOrderItems((prev) => prev.filter((_, i) => i !== idx))}
-                                style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 16, marginTop: 16 }}
-                              >
-                                <Icon.Trash />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
 
                   <div className="form-field">
@@ -1159,13 +1073,15 @@ export function AdminPortal() {
 
                           {/* ITEM GRID (SUB-TABLE) */}
                           <div style={{ padding: "12px 18px" }}>
-                            <div style={{ fontWeight: 700, fontSize: 12, textTransform: "uppercase", color: "var(--text2)", marginBottom: 8 }}>
-                              🛒 Order Items Grid ({itemsList.length} products)
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 8 }}>
+                              <div style={{ fontWeight: 700, fontSize: 12, textTransform: "uppercase", color: "var(--text2)" }}>
+                                🛒 Order Items Grid ({itemsList.length} products)
+                              </div>
                             </div>
 
                             {itemsList.length === 0 ? (
                               <div style={{ fontSize: 13, color: "var(--text2)", fontStyle: "italic", padding: "8px 0" }}>
-                                No product rows attached to this order.
+                                No product rows attached to this order. Use the form below to add products to this order.
                               </div>
                             ) : (
                               <div style={{ overflowX: "auto" }}>
@@ -1210,6 +1126,73 @@ export function AdminPortal() {
                                 </table>
                               </div>
                             )}
+
+                            {/* INLINE ADD PRODUCT ITEM BAR */}
+                            <div style={{ marginTop: 14, padding: "10px 14px", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 8, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                              <span style={{ fontSize: 12, fontWeight: 700, whiteSpace: "nowrap", color: "var(--text)" }}>
+                                ➕ Add Product to Order:
+                              </span>
+                              <select
+                                id={`add_prod_${ord.id}`}
+                                style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border)", fontSize: 12, fontWeight: 600, background: "var(--bg)", color: "var(--text)" }}
+                              >
+                                <optgroup label="Adult Streetwear T-Shirts">
+                                  {products.map((p) => (
+                                    <option key={`adult_${p.id}`} value={`adult_${p.id}`}>
+                                      [Adult #{p.id}] {p.name} — ₹{p.basePrice}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                                <optgroup label="Kids Products">
+                                  {kidsProducts.map((kp) => (
+                                    <option key={`kids_${kp.id}`} value={`kids_${kp.id}`}>
+                                      [Kids #{kp.id}] {kp.name} — ₹{kp.basePrice}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              </select>
+
+                              <select
+                                id={`add_size_${ord.id}`}
+                                style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border)", fontSize: 12, background: "var(--bg)", color: "var(--text)" }}
+                              >
+                                {["S", "M", "L", "XL", "2–3 Years", "4–5 Years", "6–7 Years", "8–9 Years"].map((sz) => (
+                                  <option key={sz} value={sz}>{sz}</option>
+                                ))}
+                              </select>
+
+                              <input
+                                id={`add_qty_${ord.id}`}
+                                type="number"
+                                min="1"
+                                defaultValue="1"
+                                style={{ width: 60, padding: "6px 8px", borderRadius: 6, border: "1px solid var(--border)", fontSize: 12, fontWeight: 600, background: "var(--bg)", color: "var(--text)" }}
+                              />
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const prodEl = document.getElementById(`add_prod_${ord.id}`) as HTMLSelectElement;
+                                  const sizeEl = document.getElementById(`add_size_${ord.id}`) as HTMLSelectElement;
+                                  const qtyEl = document.getElementById(`add_qty_${ord.id}`) as HTMLInputElement;
+                                  if (prodEl && sizeEl && qtyEl) {
+                                    handleAddItemToOrder(ord.id, prodEl.value, sizeEl.value, parseInt(qtyEl.value) || 1);
+                                  }
+                                }}
+                                style={{
+                                  padding: "6px 14px",
+                                  borderRadius: 6,
+                                  border: "none",
+                                  background: "var(--accent)",
+                                  color: "#ffffff",
+                                  fontWeight: 700,
+                                  fontSize: 12,
+                                  cursor: "pointer",
+                                }}
+                              >
+                                Add Item
+                              </button>
+                            </div>
                           </div>
 
                           {/* SUMMARY FOOTER */}
