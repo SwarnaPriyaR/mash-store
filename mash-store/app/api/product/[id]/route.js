@@ -1,25 +1,23 @@
-import { updateProduct, removeProduct } from '@/lib/db';
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
+import { updateProduct, deleteProduct } from "@/lib/db";
 
-// PATCH /api/product/[id]
 export async function PATCH(req, { params }) {
   try {
-    const id = params.id;
+    const { id } = await params;
     const body = await req.json();
-    const product = await updateProduct(id, body);
+    const product = await updateProduct(parseInt(id), body);
     return NextResponse.json(product);
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
+    return NextResponse.json({ error: String(err) }, { status: 400 });
   }
 }
 
-// DELETE /api/product/[id]
-export async function DELETE(req, { params }) {
+export async function DELETE(_req, { params }) {
   try {
-    const id = params.id;
-    const result = await removeProduct(id);
+    const { id } = await params;
+    const result = await deleteProduct(parseInt(id));
     return NextResponse.json(result);
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 404 });
+    return NextResponse.json({ error: String(err) }, { status: 404 });
   }
 }
