@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     const expectedPass = process.env.ADMIN_PASSWORD;
 
     if (!expectedPass) {
-      return NextResponse.json({ error: "ADMIN_PASSWORD is not set in environment" }, { status: 500 });
+      return NextResponse.json({ error: "Authentication configuration error" }, { status: 500 });
     }
 
     if (!password || password !== expectedPass) {
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     await session.save();
 
     return NextResponse.json({ success: true, message: "Logged in successfully" });
-  } catch (err: unknown) {
-    return NextResponse.json({ error: "Authentication failed", detail: String(err) }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: "Authentication failed" }, { status: 500 });
   }
 }

@@ -18,7 +18,7 @@ export async function GET() {
     }
 
     return NextResponse.json({ authed: false });
-  } catch (err: unknown) {
-    return NextResponse.json({ authed: false, error: String(err) });
+  } catch {
+    return NextResponse.json({ authed: false });
   }
 }

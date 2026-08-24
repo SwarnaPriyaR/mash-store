@@ -15,7 +15,7 @@ const envSchema = z.object({
 
   ADMIN_SECRET_SALT: z
     .string()
-    .min(32, "ADMIN_SECRET_SALT must be at least 32 characters long for AES-256 session encryption"),
+    .min(32, "ADMIN_SECRET_SALT must be at least 32 characters long"),
 
   ADMIN_SESSION_COOKIE_NAME: z
     .string()
