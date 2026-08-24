@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const maxLen = 32;
+
 /**
  * Enterprise Engineering Standard Environment Variable Schema
  * Validates all required auth, session, and database environment variables
@@ -15,7 +17,7 @@ const envSchema = z.object({
 
   ADMIN_SECRET_SALT: z
     .string()
-    .min(32, "ADMIN_SECRET_SALT must be at least 32 characters long"),
+    .min(maxLen, `ADMIN_SECRET_SALT value must be at least ${maxLen} characters`),
 
   ADMIN_SESSION_COOKIE_NAME: z
     .string()
