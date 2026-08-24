@@ -1,0 +1,96 @@
+// This is your Prisma schema file.
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  basePrice   Int
+  qty         Int      @default(0)
+  fit         String   @default("Regular")
+  category    String   @default("Men T-Shirt")
+  sizes       String[] @default(["S", "M", "L", "XL"])
+  image       String
+  tags        String[] @default([])
+  description String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model KidsProduct {
+  id          Int      @id @default(autoincrement())
+  name        String
+  basePrice   Int
+  qty         Int      @default(0)
+  sizes       String[] @default(["2–3 Years", "4–5 Years", "6–7 Years", "8–9 Years"])
+  image       String
+  tags        String[] @default(["Kids"])
+  description String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Customer {
+  id        String   @id // Customer ID = Email address
+  email     String   @unique
+  name      String
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CustomerCart {
+  id         Int      @id @default(autoincrement())
+  customerId String
+  productId  Int
+  qty        Int      @default(1)
+  size       String   @default("S")
+  isKids     Boolean  @default(false)
+  updatedAt  DateTime @updatedAt
+
+  @@unique([customerId, productId, size])
+}
+
+model CustomerWishlist {
+  id         Int      @id @default(autoincrement())
+  customerId String
+  productId  Int
+  isKids     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@unique([customerId, productId])
+}
+
+model Order {
+  id          String      @id // Order ID starts with 'O', e.g. O-1001
+  customerId  String
+  totalAmount Int
+  shippingFee Int         @default(0)
+  status      String      @default("Not Paid") // "Paid" | "Not Paid"
+  orderStatus String      @default("Order Received") // "Order Received" | "In progress" | "In transient" | "customer received" | "Return"
+  items       OrderItem[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model OrderItem {
+  itemId      String   @id // Formatted as: orderId + "_" + productId + "_" + quantity
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   Int
+  isKids      Boolean  @default(false)
+  productName String
+  size        String   @default("S")
+  quantity    Int
+  unitPrice   Int
+  subtotal    Int
+  createdAt   DateTime @default(now())
+}
