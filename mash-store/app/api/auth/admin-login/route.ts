@@ -4,12 +4,10 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const { password } = await req.json();
-    const inputPass = String(password || "").trim();
+    const inputPass = String(password);
+    const expectedPass = process.env.ADMIN_PASSWORD;
 
-    // Fetch expected password from server-side environment variable ADMIN_PASSWORD
-    const expectedPass = (process.env.ADMIN_PASSWORD || "mash123").trim();
-
-    if (inputPass === expectedPass) {
+    if (inputPass && expectedPass && inputPass === expectedPass) {
       return NextResponse.json({ success: true, message: "Access Granted" });
     }
 

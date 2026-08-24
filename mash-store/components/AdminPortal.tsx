@@ -463,14 +463,14 @@ export function AdminPortal() {
               </svg>
             </div>
             <h2 className="modal-title" style={{ color: "#f0ebe3", fontSize: "20px" }}>ADMIN PORTAL</h2>
-            <p className="modal-sub" style={{ color: "#8a8075" }}>Enter admin password (Default: mash123)</p>
+            <p className="modal-sub" style={{ color: "#8a8075" }}>Password required for access</p>
           </div>
           <div className="form-field">
             <label className="form-label" style={{ color: "#8a8075" }}>Password</label>
             <input
               type="password"
               className="form-input"
-              placeholder="e.g. mash123"
+              placeholder="••••••••"
               value={adminPass}
               onChange={(e) => setAdminPass(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleLoginSubmit()}
