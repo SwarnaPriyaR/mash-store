@@ -153,21 +153,29 @@ export function AdminPortal() {
     }
   }, [authed, refreshProducts, refreshKidsProducts, refreshOrders]);
 
-  const handleLoginSubmit = () => {
-    const inputPass = adminPass.trim();
-    const envPass = (process.env.ADMIN_PASSWORD || "").trim();
+  const handleLoginSubmit = async () => {
+    if (!adminPass.trim()) {
+      showToast("❌ Please enter a password");
+      return;
+    }
 
-    const isCorrect =
-      inputPass === "mash123" ||
-      inputPass.toLowerCase() === "mash123" ||
-      (envPass !== "" && inputPass === envPass);
+    try {
+      const res = await fetch("/api/auth/admin-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: adminPass }),
+      });
 
-    if (isCorrect) {
-      setAuthed(true);
-      sessionStorage.setItem("admin_authed", "true");
-      showToast("🔓 Access Granted");
-    } else {
-      showToast("❌ Incorrect Password");
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setAuthed(true);
+        sessionStorage.setItem("admin_authed", "true");
+        showToast("🔓 Access Granted");
+      } else {
+        showToast("❌ Incorrect Password");
+      }
+    } catch {
+      showToast("❌ Failed to validate password");
     }
   };
 
