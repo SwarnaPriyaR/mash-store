@@ -104,7 +104,7 @@ export function UnderConstructionSection({
               borderRadius: 99,
             }}
           >
-            {title}
+            UNDER CONSTRUCTION
           </span>
         </div>
 
