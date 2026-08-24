@@ -595,6 +595,63 @@ export async function updateOrderDetails(
   }
 }
 
+/** Add an OrderItem to an existing Order, recalculate order totalAmount, and reduce stock if Paid */
+export async function addOrderItemToOrder(
+  orderId: string,
+  itemData: {
+    productId: number;
+    productName: string;
+    size: string;
+    quantity: number;
+    unitPrice: number;
+    isKids?: boolean;
+  }
+): Promise<OrderData | null> {
+  try {
+    const qty = itemData.quantity || 1;
+    const price = itemData.unitPrice || 0;
+    const itemId = `${orderId}_${itemData.productId}_${qty}`;
+
+    await prisma.orderItem.upsert({
+      where: { itemId },
+      create: {
+        itemId,
+        orderId,
+        productId: itemData.productId,
+        isKids: itemData.isKids ?? false,
+        productName: itemData.productName,
+        size: itemData.size || "S",
+        quantity: qty,
+        unitPrice: price,
+        subtotal: qty * price,
+      },
+      update: {
+        quantity: qty,
+        unitPrice: price,
+        subtotal: qty * price,
+      },
+    });
+
+    const allItems = await prisma.orderItem.findMany({ where: { orderId } });
+    const newTotal = allItems.reduce((sum, it) => sum + it.subtotal, 0);
+
+    const updatedOrder = await prisma.order.update({
+      where: { id: orderId },
+      data: { totalAmount: newTotal },
+      include: { items: true },
+    });
+
+    if (updatedOrder.status === "Paid") {
+      await reduceProductStock([{ productId: itemData.productId, quantity: qty, isKids: itemData.isKids }]);
+    }
+
+    return updatedOrder as unknown as OrderData;
+  } catch (err) {
+    console.error("Failed to add order item:", err);
+    return null;
+  }
+}
+
 /** Delete an order by ID */
 export async function deleteOrder(id: string): Promise<boolean> {
   try {
