@@ -70,6 +70,26 @@ export type UpdateProductPayload = Partial<{
   description: string;
 }>;
 
+export type OrderItem = {
+  productId: number;
+  name: string;
+  price: number;
+  qty: number;
+  size?: string;
+  isKids?: boolean;
+};
+
+export type OrderData = {
+  id: string;
+  customerId: string;
+  items?: OrderItem[];
+  totalAmount: number;
+  status: string;
+  orderStatus?: string;
+  createdAt: Date;
+  updatedAt?: Date;
+};
+
 // Default sample kids products if table is newly initialized
 export const DEFAULT_KIDS_PRODUCTS: KidsProduct[] = [
   {
@@ -337,15 +357,6 @@ export type CustomerData = {
   image?: string | null;
 };
 
-export type OrderData = {
-  id: string;
-  customerId: string;
-  totalAmount: number;
-  status: string; // "Paid" | "Not Paid"
-  orderStatus: string; // "Order Received" | "In progress" | "In transient" | "customer received" | "Return"
-  createdAt?: Date;
-};
-
 /** Find customer by email */
 export async function findCustomerByEmail(email: string): Promise<CustomerData | null> {
   try {
@@ -445,13 +456,21 @@ export async function getAllOrders(): Promise<OrderData[]> {
 }
 
 /** Create a new order (Order ID starts with 'O', e.g. O-1001) */
-export async function createOrder(data: { id?: string; customerId: string; totalAmount: number; status?: string; orderStatus?: string }): Promise<OrderData> {
+export async function createOrder(data: {
+  id?: string;
+  customerId: string;
+  items?: OrderItem[];
+  totalAmount: number;
+  status?: string;
+  orderStatus?: string;
+}): Promise<OrderData> {
   const orderId = data.id || `O-${Math.floor(1000 + Math.random() * 9000)}`;
   try {
     const created = await prisma.order.create({
       data: {
         id: orderId,
         customerId: data.customerId,
+        items: data.items || [],
         totalAmount: data.totalAmount,
         status: data.status || "Not Paid",
         orderStatus: data.orderStatus || "Order Received",
@@ -462,6 +481,7 @@ export async function createOrder(data: { id?: string; customerId: string; total
     return {
       id: orderId,
       customerId: data.customerId,
+      items: data.items || [],
       totalAmount: data.totalAmount,
       status: data.status || "Not Paid",
       orderStatus: data.orderStatus || "Order Received",
@@ -479,7 +499,7 @@ export async function updateOrderDetails(id: string, data: { status?: string; or
     });
     return updated as unknown as OrderData;
   } catch {
-    return { id, customerId: "customer@example.com", totalAmount: 0, status: data.status || "Not Paid", orderStatus: data.orderStatus || "Order Received" };
+    return { id, customerId: "customer@example.com", totalAmount: 0, status: data.status || "Not Paid", orderStatus: data.orderStatus || "Order Received", createdAt: new Date() };
   }
 }
 

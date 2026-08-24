@@ -72,6 +72,7 @@ model CustomerWishlist {
 model Order {
   id          String   @id // Order ID starts with 'O', e.g. O-1001
   customerId  String
+  items       Json     @default("[]")
   totalAmount Int
   status      String   @default("Not Paid") // "Paid" | "Not Paid"
   orderStatus String   @default("Order Received") // "Order Received" | "In progress" | "In transient" | "customer received" | "Return"
