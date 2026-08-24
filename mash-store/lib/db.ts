@@ -485,6 +485,33 @@ export async function reduceProductStock(items: { productId: number; quantity: n
   }
 }
 
+/** Increase/restore product stock for items when an order status changes from Paid back to Not Paid */
+export async function increaseProductStock(items: { productId: number; quantity: number; isKids?: boolean }[]) {
+  for (const item of items) {
+    try {
+      if (item.isKids) {
+        const kp = await prisma.kidsProduct.findUnique({ where: { id: item.productId } });
+        if (kp) {
+          await prisma.kidsProduct.update({
+            where: { id: item.productId },
+            data: { qty: kp.qty + item.quantity },
+          });
+        }
+      } else {
+        const p = await prisma.product.findUnique({ where: { id: item.productId } });
+        if (p) {
+          await prisma.product.update({
+            where: { id: item.productId },
+            data: { qty: p.qty + item.quantity },
+          });
+        }
+      }
+    } catch (err) {
+      console.error(`Failed to restore stock for product #${item.productId}:`, err);
+    }
+  }
+}
+
 /** Create a new order with 1NF OrderItems (Order ID starts with 'O', e.g. O-1001) */
 export async function createOrder(data: {
   id?: string;
@@ -577,9 +604,14 @@ export async function updateOrderDetails(
       include: { items: true },
     });
 
-    // Reduce stock when order payment status changes to Paid
+    // Reduce stock when order payment status changes from Not Paid -> Paid
     if (data.status === "Paid" && existing?.status !== "Paid" && updated.items.length > 0) {
       await reduceProductStock(updated.items);
+    }
+
+    // Increase/restore stock when order payment status changes from Paid -> Not Paid
+    if (data.status === "Not Paid" && existing?.status === "Paid" && updated.items.length > 0) {
+      await increaseProductStock(updated.items);
     }
 
     return updated as unknown as OrderData;
