@@ -23,6 +23,5 @@ dist
 *.sw?
 
 # Security: Ignore environment variables
-.env
 .env.*
 !.env.example
