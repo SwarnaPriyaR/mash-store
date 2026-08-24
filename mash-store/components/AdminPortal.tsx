@@ -155,6 +155,17 @@ export function AdminPortal() {
   }, []);
 
   useEffect(() => {
+    fetch("/api/auth/admin-check")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authed) {
+          setAuthed(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (authed) {
       refreshProducts();
       refreshKidsProducts();
@@ -164,7 +175,7 @@ export function AdminPortal() {
 
   const handleLoginSubmit = async () => {
     if (!adminPass.trim()) {
-      showToast("❌ Please enter a password");
+      showToast("Please enter a password");
       return;
     }
 
@@ -178,13 +189,12 @@ export function AdminPortal() {
       const data = await res.json();
       if (res.ok && data.success) {
         setAuthed(true);
-        sessionStorage.setItem("admin_authed", "true");
-        showToast("🔓 Access Granted");
+        showToast("Access Granted");
       } else {
-        showToast("❌ Incorrect Password");
+        showToast("Incorrect Password");
       }
     } catch {
-      showToast("❌ Failed to validate password");
+      showToast("Failed to validate password");
     }
   };
 
@@ -619,7 +629,13 @@ export function AdminPortal() {
     );
   }
 
-  const handleLogout = () => { setAuthed(false); sessionStorage.removeItem("admin_authed"); showToast("🔒 Logged out"); };
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/admin-logout", { method: "POST" });
+    } catch {}
+    setAuthed(false);
+    showToast("Logged out of Admin Portal");
+  };
 
   return (
     <div className="admin-portal-layout">
