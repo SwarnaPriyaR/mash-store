@@ -36,7 +36,7 @@ export function KidsPageClient({ initialProducts }: Props) {
   });
 
   return (
-    <div className="products-page" style={{ paddingTop: 96 }}>
+    <div className="products-page">
       {/* HEADER SECTION */}
       <div className="products-header" style={{ marginBottom: 28 }}>
         <h1 className="products-title">MASH KIDS</h1>

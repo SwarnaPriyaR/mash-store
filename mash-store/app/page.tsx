@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function HomePage() {
   return (
-    <div className="hero" style={{ paddingTop: 64 }}>
+    <div className="hero">
       <HomePageClient />
       <div className="hero-bg-text">MASH</div>
       <div className="hero-content">

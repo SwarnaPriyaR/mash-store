@@ -69,7 +69,7 @@ export function OrdersClient() {
   };
 
   return (
-    <div className="products-page" style={{ paddingTop: 96, paddingBottom: 64, maxWidth: 1100, margin: "0 auto", paddingLeft: 16, paddingRight: 16 }}>
+    <div className="products-page" style={{ paddingBottom: 64, maxWidth: 1100, margin: "0 auto", paddingLeft: 16, paddingRight: 16 }}>
       {/* PAGE HEADER */}
       <div style={{ textAlign: "center", marginBottom: 36 }}>
         <span className="sale-tag" style={{ fontSize: 12, letterSpacing: "0.08em", padding: "4px 12px", marginBottom: 12, display: "inline-block" }}>
