@@ -21,6 +21,7 @@ export async function POST(req: Request) {
     const order = await createOrder({
       id: orderId,
       customerId: body.customerId,
+      items: Array.isArray(body.items) ? body.items : [],
       totalAmount: body.totalAmount,
       status: body.status || "Not Paid",
       orderStatus: body.orderStatus || "Order Received",
