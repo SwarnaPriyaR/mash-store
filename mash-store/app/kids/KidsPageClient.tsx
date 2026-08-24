@@ -40,9 +40,6 @@ export function KidsPageClient({ initialProducts }: Props) {
       {/* HEADER SECTION */}
       <div className="products-header" style={{ marginBottom: 28 }}>
         <h1 className="products-title">MASH KIDS</h1>
-        <p className="products-sub">
-          Showing {filtered.length} style{filtered.length !== 1 ? "s" : ""} for kids
-        </p>
 
         {/* FLOATING FILTERS */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 16 }}>
