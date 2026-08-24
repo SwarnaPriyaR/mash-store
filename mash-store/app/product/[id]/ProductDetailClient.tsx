@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Icon } from "@/components/Icon";
 import { useCart } from "@/components/CartProvider";
 import { useSale } from "@/components/SaleProvider";
+import { UnderConstructionSection } from "@/components/UnderConstructionSection";
 import type { Product } from "@/lib/db";
 
 interface ProductWithReviews extends Product {
@@ -32,75 +33,11 @@ export function ProductDetailClient({ product, relatedProducts = [] }: Props) {
         <Icon.ArrowLeft /> Back to Products
       </Link>
 
-      {/* UNDER CONSTRUCTION — EXPLORE NEW KIDS LAUNCHES BANNER */}
-      <div
-        style={{
-          background: "linear-gradient(135deg, #fef08a 0%, #fed7aa 100%)",
-          border: "1.5px solid #f59e0b",
-          borderRadius: 14,
-          padding: "14px 20px",
-          marginBottom: 24,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 16,
-          flexWrap: "wrap",
-          boxShadow: "0 4px 14px rgba(245, 158, 11, 0.15)",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: 32, height: 32, flexShrink: 0, color: "#b45309" }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2L2 22h20L12 2z" />
-              <path d="M12 9v5" />
-              <path d="M12 17h.01" />
-            </svg>
-          </div>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span
-                style={{
-                  fontWeight: 800,
-                  fontSize: 11,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  background: "#d97706",
-                  color: "#ffffff",
-                  padding: "2px 8px",
-                  borderRadius: 6,
-                }}
-              >
-                🚧 UNDER CONSTRUCTION
-              </span>
-              <span style={{ fontWeight: 800, fontSize: 14, color: "#78350f" }}>
-                Explore New Kids Launches
-              </span>
-            </div>
-            <p style={{ margin: "3px 0 0 0", fontSize: 13, color: "#92400e", fontWeight: 500 }}>
-              Enhanced 3D view & custom fit preview are currently under construction. Basic product ordering remains fully functional below!
-            </p>
-          </div>
-        </div>
-
-        <Link
-          href="/kids"
-          style={{
-            padding: "8px 16px",
-            borderRadius: 99,
-            background: "#78350f",
-            color: "#ffffff",
-            fontSize: 13,
-            fontWeight: 700,
-            textDecoration: "none",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            whiteSpace: "nowrap",
-          }}
-        >
-          🎈 Go to Kids Portal →
-        </Link>
-      </div>
+      {/* UNDER CONSTRUCTION SECTION WITH COUNTDOWN & EMAIL NOTIFY (MATCHING REFERENCE DESIGN) */}
+      <UnderConstructionSection
+        title="UNDER CONSTRUCTION"
+        subtitle="Explore New Kids Launches — Enhanced 3D view & custom fit preview are currently under construction. Basic product ordering remains fully functional below!"
+      />
 
       <div className="detail-grid">
         <div className="detail-img-wrap">
