@@ -10,11 +10,10 @@ node_modules
 .next
 out
 dist
-
+.idea/
 # Editor directories
 .vscode/*
 !.vscode/extensions.json
-.idea
 .DS_Store
 *.suo
 *.ntvs*
