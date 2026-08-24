@@ -24,6 +24,7 @@ interface CartContextValue {
   toasts: { id: number; msg: string }[];
   loggedIn: boolean;
   user: string | null;
+  userEmail: string | null;
   handleLogin: (name: string) => void;
   handleLogout: () => void;
   dark: boolean;
@@ -39,6 +40,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<{ id: number; msg: string }[]>([]);
   const [loggedIn, setLoggedIn] = useState(false);
   const [user, setUser] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [dark, setDarkState] = useState(false);
   const [isLoadedFromDb, setIsLoadedFromDb] = useState(false);
 
@@ -71,6 +73,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (res.authenticated && res.user) {
           setLoggedIn(true);
           setUser(res.user.name || res.user.email.split("@")[0]);
+          setUserEmail(res.user.email);
 
           // Fetch customer cart from DB
           try {
@@ -184,11 +187,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [toast]);
 
   const handleLogin = useCallback((name: string) => {
-    setLoggedIn(true); setUser(name); toast(`Welcome, ${name}!`);
+    setLoggedIn(true);
+    setUser(name);
+    const email = name.includes("@") ? name : `${name.toLowerCase().replace(/\s+/g, "")}@gmail.com`;
+    setUserEmail(email);
+    toast(`Welcome, ${name}!`);
   }, [toast]);
 
   const handleLogout = useCallback(async () => {
-    setLoggedIn(false); setUser(null); setCart([]); setWishlist([]);
+    setLoggedIn(false); setUser(null); setUserEmail(null); setCart([]); setWishlist([]);
     try {
       await fetch("/api/auth/logout", { method: "POST" });
     } catch {}
@@ -200,7 +207,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       cart, wishlist, products,
       addToCart, removeFromCart, changeQty, toggleWishlist,
       toast, toasts,
-      loggedIn, user, handleLogin, handleLogout,
+      loggedIn, user, userEmail, handleLogin, handleLogout,
       dark, setDark,
     }}>
       {children}

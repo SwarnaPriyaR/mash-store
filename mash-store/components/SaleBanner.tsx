@@ -44,7 +44,7 @@ export function SaleBanner({ sale, type }: Props) {
       position: "fixed", top: 0, left: 0, right: 0, zIndex: 101, height: 40,
       background: "linear-gradient(90deg,#ea580c,#d4af37)", color: "#1a1714",
     }}>
-      <span style={{ fontSize: 15 }}>⏰</span> UPCOMING OFFER: {sale.discount}% DISCOUNT IN &nbsp;
+      UPCOMING OFFER: {sale.discount}% DISCOUNT IN &nbsp;
       {timer && <span className="sale-timer" style={{ background: "rgba(0,0,0,0.15)", color: "#1a1714" }}>{timer}</span>}
     </div>
   );
