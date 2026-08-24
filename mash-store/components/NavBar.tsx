@@ -59,10 +59,6 @@ export function NavBar() {
             <Icon.Package /> Orders
           </Link>
 
-          <button className="icon-btn" onClick={() => setDark(!dark)} title="Toggle theme">
-            {dark ? <Icon.Sun /> : <Icon.Moon />}
-          </button>
-
           {loggedIn ? (
             <button className="auth-btn" onClick={handleLogout}>
               {user?.split(" ")[0]} · Logout
@@ -74,6 +70,9 @@ export function NavBar() {
             </>
           )}
 
+          <button className="icon-btn" onClick={() => setDark(!dark)} title="Toggle theme">
+            {dark ? <Icon.Sun /> : <Icon.Moon />}
+          </button>
           <Link href="/wishlist" className="icon-btn" title="Wishlist" style={{ textDecoration: "none" }}>
             <Icon.Heart filled={wishCount > 0} />
             {wishCount > 0 && <span className="badge">{wishCount}</span>}
