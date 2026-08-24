@@ -10,8 +10,8 @@ interface Props {
 }
 
 export function UnderConstructionSection({
-  title = "UNDER CONSTRUCTION",
-  subtitle = "Explore New Kids Launches — Our new customizer & exclusive drop portal is undergoing scheduled upgrades. Subscribe now to get early notification of our launch date!",
+  title = "COMING SOON",
+  subtitle = "Exciting Things Are Coming Your Way!",
   targetDays = 14,
 }: Props) {
   const [email, setEmail] = useState("");
@@ -104,7 +104,7 @@ export function UnderConstructionSection({
               borderRadius: 99,
             }}
           >
-            🚧 {title}
+            {title}
           </span>
         </div>
 
@@ -119,7 +119,7 @@ export function UnderConstructionSection({
             textTransform: "uppercase",
           }}
         >
-          EXPLORE NEW KIDS LAUNCHES — COMING SOON
+          {title}
         </h2>
 
         {/* SUBTITLE */}

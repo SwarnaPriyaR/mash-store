@@ -80,8 +80,8 @@ export function ProductsClient() {
 
       {/* UNDER CONSTRUCTION SECTION WITH COUNTDOWN & EMAIL NOTIFY (MATCHING REFERENCE DESIGN) */}
       <UnderConstructionSection
-        title="UNDER CONSTRUCTION"
-        subtitle="Explore New Kids Launches — Our interactive kids customizer & exclusive drop portal is currently undergoing scheduled upgrades. Subscribe now to get early notification on our launch date!"
+        title="COMING SOON"
+        subtitle="Exciting Things Are Coming Your Way!"
       />
 
       {/* Category Filters: Men, Women, Unisex */}
