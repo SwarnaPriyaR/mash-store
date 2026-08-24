@@ -10,7 +10,7 @@ import React, { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { Icon } from "./Icon";
 import { useSale } from "./SaleProvider";
-import { convertDriveUrl, DEFAULT_SALE, getSizeStock, getAvailableSizes, embedSizeStockInDescription } from "@/lib/helpers";
+import { convertDriveUrl, DEFAULT_SALE, getSizeStock, getAvailableSizes, embedSizeStockInDescription, getSalePrice } from "@/lib/helpers";
 import type { Product, KidsProduct, OrderData } from "@/lib/db";
 
 type AdminProduct = Product & { price: number; sizeStock: Record<string, number> };
@@ -64,7 +64,6 @@ export function AdminPortal() {
   const [newOrder, setNewOrder] = useState({
     id: "",
     customerId: "",
-    totalAmount: "",
     status: "Not Paid",
     orderStatus: "Order Received",
   });
@@ -384,12 +383,9 @@ export function AdminPortal() {
     }
   }, [refreshKidsProducts, showToast]);
 
-  // Manual Order Handlers
   const handleAddOrder = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newOrder.customerId.trim()) { showToast("Customer ID (email) is required"); return; }
-    const amount = parseInt(newOrder.totalAmount);
-    if (isNaN(amount) || amount <= 0) { showToast("Total amount must be positive"); return; }
 
     let formattedId = newOrder.id.trim();
     if (formattedId && !formattedId.toUpperCase().startsWith("O")) {
@@ -403,8 +399,8 @@ export function AdminPortal() {
         body: JSON.stringify({
           id: formattedId,
           customerId: newOrder.customerId.trim(),
-          items: orderItems,
-          totalAmount: amount,
+          items: [],
+          totalAmount: 0,
           status: newOrder.status,
           orderStatus: newOrder.orderStatus,
         }),
@@ -412,7 +408,7 @@ export function AdminPortal() {
       if (!res.ok) throw new Error("Failed to create order");
       const created: OrderData = await res.json();
       setOrders((prev) => [created, ...prev]);
-      setNewOrder({ id: "", customerId: "", totalAmount: "", status: "Not Paid", orderStatus: "Order Received" });
+      setNewOrder({ id: "", customerId: "", status: "Not Paid", orderStatus: "Order Received" });
       setOrderItems([]);
       setExpandOrderForm(false);
 
@@ -485,13 +481,15 @@ export function AdminPortal() {
       const p = products.find((x) => x.id === id);
       if (p) {
         pName = p.name;
-        pPrice = p.basePrice;
+        const salePrice = getSalePrice(p, sale, false);
+        pPrice = salePrice !== null ? salePrice : p.basePrice;
       }
     } else {
       const kp = kidsProducts.find((x) => x.id === id);
       if (kp) {
         pName = kp.name;
-        pPrice = kp.basePrice;
+        const salePrice = getSalePrice(kp, sale, true);
+        pPrice = salePrice !== null ? salePrice : kp.basePrice;
         isKids = true;
       }
     }
@@ -522,7 +520,7 @@ export function AdminPortal() {
     } catch (err) {
       showToast(`❌ Failed to add order item: ${String(err)}`);
     }
-  }, [products, kidsProducts, showToast, refreshProducts, refreshKidsProducts]);
+  }, [products, kidsProducts, sale, showToast, refreshProducts, refreshKidsProducts]);
 
   const handleSetSale = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1142,18 +1140,6 @@ export function AdminPortal() {
                   </div>
 
                   <div className="form-field">
-                    <label className="form-label">Total Amount Paid / Due (INR) *</label>
-                    <input
-                      className="form-input"
-                      type="number"
-                      placeholder="e.g. 1499"
-                      value={newOrder.totalAmount}
-                      onChange={(e) => setNewOrder({ ...newOrder, totalAmount: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-field">
                     <label className="form-label">Payment Status *</label>
                     <select
                       className="form-input"
@@ -1407,18 +1393,26 @@ export function AdminPortal() {
                                     style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border)", fontSize: 12, fontWeight: 600, background: "var(--bg)", color: "var(--text)" }}
                                   >
                                     <optgroup label="Adult Streetwear T-Shirts">
-                                      {products.map((p) => (
-                                        <option key={`adult_${p.id}`} value={`adult_${p.id}`}>
-                                          [Adult #{p.id}] {p.name} — ₹{p.basePrice} (Qty: {p.qty})
-                                        </option>
-                                      ))}
+                                      {products.map((p) => {
+                                        const sp = getSalePrice(p, sale, false);
+                                        const priceStr = sp !== null ? `₹${sp} (Sale! Was ₹${p.basePrice})` : `₹${p.basePrice}`;
+                                        return (
+                                          <option key={`adult_${p.id}`} value={`adult_${p.id}`}>
+                                            [Adult #{p.id}] {p.name} — {priceStr} (Qty: {p.qty})
+                                          </option>
+                                        );
+                                      })}
                                     </optgroup>
                                     <optgroup label="Kids Products">
-                                      {kidsProducts.map((kp) => (
-                                        <option key={`kids_${kp.id}`} value={`kids_${kp.id}`}>
-                                          [Kids #{kp.id}] {kp.name} — ₹{kp.basePrice} (Qty: {kp.qty})
-                                        </option>
-                                      ))}
+                                      {kidsProducts.map((kp) => {
+                                        const sp = getSalePrice(kp, sale, true);
+                                        const priceStr = sp !== null ? `₹${sp} (Sale! Was ₹${kp.basePrice})` : `₹${kp.basePrice}`;
+                                        return (
+                                          <option key={`kids_${kp.id}`} value={`kids_${kp.id}`}>
+                                            [Kids #{kp.id}] {kp.name} — {priceStr} (Qty: {kp.qty})
+                                          </option>
+                                        );
+                                      })}
                                     </optgroup>
                                   </select>
 

@@ -6,8 +6,8 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    if (!body.customerId || typeof body.totalAmount !== "number") {
-      return NextResponse.json({ error: "customerId and totalAmount are required" }, { status: 400 });
+    if (!body.customerId) {
+      return NextResponse.json({ error: "customerId is required" }, { status: 400 });
     }
 
     let orderId = body.id ? String(body.id).trim() : "";
