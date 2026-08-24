@@ -12,6 +12,7 @@ export type SaleState = {
   end: number;
   startTime: number | null;
   durationHours: number;
+  target?: "both" | "adult" | "kids";
 };
 
 export const DEFAULT_SALE: SaleState = {
@@ -21,16 +22,21 @@ export const DEFAULT_SALE: SaleState = {
   end: 0,
   startTime: null,
   durationHours: 0,
+  target: "both",
 };
 
 /** Returns the sale price for a product if a sale is currently active, else null */
 export const getSalePrice = (
   product: { basePrice: number },
-  sale: SaleState
+  sale: SaleState,
+  isKids: boolean = false
 ): number | null => {
   if (!sale || !sale.active) return null;
   const now = Date.now();
   if (now >= sale.start && now <= sale.end) {
+    const target = sale.target || "both";
+    if (target === "adult" && isKids) return null;
+    if (target === "kids" && !isKids) return null;
     return Math.round(product.basePrice * (1 - sale.discount / 100));
   }
   return null;
