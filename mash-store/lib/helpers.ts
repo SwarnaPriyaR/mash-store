@@ -96,3 +96,23 @@ export function embedSizeStockInDescription(desc: string = "", sizeStock: Record
   const cleanDesc = desc.replace(/<!--SIZE_STOCK:.*?-->/g, "").trim();
   return `${cleanDesc} <!--SIZE_STOCK:${JSON.stringify(sizeStock)}-->`;
 }
+
+/** Returns list of sizes that have inventory stock > 0 for a product */
+export function getAvailableSizes(
+  product: { sizes?: string[]; qty?: number; description?: string; sizeStock?: Record<string, number> },
+  isKids: boolean = false
+): string[] {
+  if (product.qty !== undefined && product.qty <= 0) {
+    return [];
+  }
+
+  const stockMap = getSizeStock(product);
+  const defaultSizes = isKids
+    ? ["2–3 Years", "4–5 Years", "5–6 Years", "6–7 Years", "8–9 Years"]
+    : ["S", "M", "L", "XL"];
+  const rawSizes = product.sizes && product.sizes.length > 0 ? product.sizes : defaultSizes;
+
+  // Only include sizes where inventory stock is > 0
+  const available = rawSizes.filter((sz) => (stockMap[sz] ?? 0) > 0);
+  return available;
+}

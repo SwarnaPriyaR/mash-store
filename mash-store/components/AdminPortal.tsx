@@ -10,7 +10,7 @@ import React, { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { Icon } from "./Icon";
 import { useSale } from "./SaleProvider";
-import { convertDriveUrl, DEFAULT_SALE, getSizeStock, embedSizeStockInDescription } from "@/lib/helpers";
+import { convertDriveUrl, DEFAULT_SALE, getSizeStock, getAvailableSizes, embedSizeStockInDescription } from "@/lib/helpers";
 import type { Product, KidsProduct, OrderData } from "@/lib/db";
 
 type AdminProduct = Product & { price: number; sizeStock: Record<string, number> };
@@ -78,6 +78,7 @@ export function AdminPortal() {
     isKids: boolean;
   }[]>([]);
   const [orderIdFilter, setOrderIdFilter] = useState("");
+  const [orderSelectedProduct, setOrderSelectedProduct] = useState<Record<string, string>>({});
 
   const [editValues, setEditValues] = useState<Record<string, string>>({});
 
@@ -1132,71 +1133,97 @@ export function AdminPortal() {
                             )}
 
                             {/* INLINE ADD PRODUCT ITEM BAR */}
-                            <div style={{ marginTop: 14, padding: "10px 14px", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 8, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                              <span style={{ fontSize: 12, fontWeight: 700, whiteSpace: "nowrap", color: "var(--text)" }}>
-                                ➕ Add Product to Order:
-                              </span>
-                              <select
-                                id={`add_prod_${ord.id}`}
-                                style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border)", fontSize: 12, fontWeight: 600, background: "var(--bg)", color: "var(--text)" }}
-                              >
-                                <optgroup label="Adult Streetwear T-Shirts">
-                                  {products.map((p) => (
-                                    <option key={`adult_${p.id}`} value={`adult_${p.id}`}>
-                                      [Adult #{p.id}] {p.name} — ₹{p.basePrice}
-                                    </option>
-                                  ))}
-                                </optgroup>
-                                <optgroup label="Kids Products">
-                                  {kidsProducts.map((kp) => (
-                                    <option key={`kids_${kp.id}`} value={`kids_${kp.id}`}>
-                                      [Kids #{kp.id}] {kp.name} — ₹{kp.basePrice}
-                                    </option>
-                                  ))}
-                                </optgroup>
-                              </select>
+                            {(() => {
+                              const currentProdKey = orderSelectedProduct[ord.id] || (products[0] ? `adult_${products[0].id}` : kidsProducts[0] ? `kids_${kidsProducts[0].id}` : "");
+                              const [curType, curIdStr] = currentProdKey.split("_");
+                              const curId = parseInt(curIdStr || "0");
 
-                              <select
-                                id={`add_size_${ord.id}`}
-                                style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border)", fontSize: 12, background: "var(--bg)", color: "var(--text)" }}
-                              >
-                                {["S", "M", "L", "XL", "2–3 Years", "4–5 Years", "6–7 Years", "8–9 Years"].map((sz) => (
-                                  <option key={sz} value={sz}>{sz}</option>
-                                ))}
-                              </select>
+                              let availableSizesForSel: string[] = [];
+                              if (curType === "adult") {
+                                const selP = products.find((x) => x.id === curId);
+                                if (selP) availableSizesForSel = getAvailableSizes(selP, false);
+                              } else if (curType === "kids") {
+                                const selKP = kidsProducts.find((x) => x.id === curId);
+                                if (selKP) availableSizesForSel = getAvailableSizes(selKP, true);
+                              }
 
-                              <input
-                                id={`add_qty_${ord.id}`}
-                                type="number"
-                                min="1"
-                                defaultValue="1"
-                                style={{ width: 60, padding: "6px 8px", borderRadius: 6, border: "1px solid var(--border)", fontSize: 12, fontWeight: 600, background: "var(--bg)", color: "var(--text)" }}
-                              />
+                              return (
+                                <div style={{ marginTop: 14, padding: "10px 14px", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 8, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                                  <span style={{ fontSize: 12, fontWeight: 700, whiteSpace: "nowrap", color: "var(--text)" }}>
+                                    ➕ Add Product to Order:
+                                  </span>
+                                  <select
+                                    id={`add_prod_${ord.id}`}
+                                    value={currentProdKey}
+                                    onChange={(e) => setOrderSelectedProduct((prev) => ({ ...prev, [ord.id]: e.target.value }))}
+                                    style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border)", fontSize: 12, fontWeight: 600, background: "var(--bg)", color: "var(--text)" }}
+                                  >
+                                    <optgroup label="Adult Streetwear T-Shirts">
+                                      {products.map((p) => (
+                                        <option key={`adult_${p.id}`} value={`adult_${p.id}`}>
+                                          [Adult #{p.id}] {p.name} — ₹{p.basePrice} (Qty: {p.qty})
+                                        </option>
+                                      ))}
+                                    </optgroup>
+                                    <optgroup label="Kids Products">
+                                      {kidsProducts.map((kp) => (
+                                        <option key={`kids_${kp.id}`} value={`kids_${kp.id}`}>
+                                          [Kids #{kp.id}] {kp.name} — ₹{kp.basePrice} (Qty: {kp.qty})
+                                        </option>
+                                      ))}
+                                    </optgroup>
+                                  </select>
 
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const prodEl = document.getElementById(`add_prod_${ord.id}`) as HTMLSelectElement;
-                                  const sizeEl = document.getElementById(`add_size_${ord.id}`) as HTMLSelectElement;
-                                  const qtyEl = document.getElementById(`add_qty_${ord.id}`) as HTMLInputElement;
-                                  if (prodEl && sizeEl && qtyEl) {
-                                    handleAddItemToOrder(ord.id, prodEl.value, sizeEl.value, parseInt(qtyEl.value) || 1);
-                                  }
-                                }}
-                                style={{
-                                  padding: "6px 14px",
-                                  borderRadius: 6,
-                                  border: "none",
-                                  background: "var(--accent)",
-                                  color: "#ffffff",
-                                  fontWeight: 700,
-                                  fontSize: 12,
-                                  cursor: "pointer",
-                                }}
-                              >
-                                Add Item
-                              </button>
-                            </div>
+                                  <select
+                                    id={`add_size_${ord.id}`}
+                                    disabled={availableSizesForSel.length === 0}
+                                    style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border)", fontSize: 12, background: "var(--bg)", color: "var(--text)" }}
+                                  >
+                                    {availableSizesForSel.length === 0 ? (
+                                      <option value="">Out of Stock (0 qty)</option>
+                                    ) : (
+                                      availableSizesForSel.map((sz) => (
+                                        <option key={sz} value={sz}>{sz}</option>
+                                      ))
+                                    )}
+                                  </select>
+
+                                  <input
+                                    id={`add_qty_${ord.id}`}
+                                    type="number"
+                                    min="1"
+                                    defaultValue="1"
+                                    disabled={availableSizesForSel.length === 0}
+                                    style={{ width: 60, padding: "6px 8px", borderRadius: 6, border: "1px solid var(--border)", fontSize: 12, fontWeight: 600, background: "var(--bg)", color: "var(--text)" }}
+                                  />
+
+                                  <button
+                                    type="button"
+                                    disabled={availableSizesForSel.length === 0}
+                                    onClick={() => {
+                                      const prodEl = document.getElementById(`add_prod_${ord.id}`) as HTMLSelectElement;
+                                      const sizeEl = document.getElementById(`add_size_${ord.id}`) as HTMLSelectElement;
+                                      const qtyEl = document.getElementById(`add_qty_${ord.id}`) as HTMLInputElement;
+                                      if (prodEl && sizeEl && qtyEl && sizeEl.value) {
+                                        handleAddItemToOrder(ord.id, prodEl.value, sizeEl.value, parseInt(qtyEl.value) || 1);
+                                      }
+                                    }}
+                                    style={{
+                                      padding: "6px 14px",
+                                      borderRadius: 6,
+                                      border: "none",
+                                      background: availableSizesForSel.length === 0 ? "#6b7280" : "var(--accent)",
+                                      color: "#ffffff",
+                                      fontWeight: 700,
+                                      fontSize: 12,
+                                      cursor: availableSizesForSel.length === 0 ? "not-allowed" : "pointer",
+                                    }}
+                                  >
+                                    Add Item
+                                  </button>
+                                </div>
+                              );
+                            })()}
                           </div>
 
                           {/* SUMMARY FOOTER */}
