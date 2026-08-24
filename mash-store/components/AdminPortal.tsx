@@ -899,7 +899,7 @@ export function AdminPortal() {
             >
               <div>
                 <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: isSaleActive ? "#15803d" : "var(--text2)" }}>
-                  {isSaleActive ? "⚡ ACTIVE STOREWIDE SALE" : "💤 NO SALE CURRENTLY ACTIVE"}
+                  {isSaleActive ? "ACTIVE STOREWIDE SALE" : "NO SALE CURRENTLY ACTIVE"}
                 </div>
                 <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4, color: isSaleActive ? "#15803d" : "var(--text)" }}>
                   {isSaleActive ? `${sale.discount}% OFF STOREWIDE` : "Standard Catalog Pricing"}
@@ -926,7 +926,7 @@ export function AdminPortal() {
                     cursor: "pointer",
                   }}
                 >
-                  🛑 STOP & CANCEL SALE
+                  STOP & CANCEL SALE
                 </button>
               )}
             </div>
@@ -1006,7 +1006,7 @@ export function AdminPortal() {
                   className="admin-action-btn"
                   style={{ background: "var(--accent)", color: "#fff", borderColor: "var(--accent)", padding: "12px 28px", marginTop: "20px", fontSize: "14px" }}
                 >
-                  {saleForm.mode === "instant" ? "⚡ Activate Instant Sale" : "📅 Lock & Schedule Offer"}
+                  {saleForm.mode === "instant" ? "Activate Instant Sale" : "Lock & Schedule Offer"}
                 </button>
               </form>
             </div>
@@ -1014,7 +1014,7 @@ export function AdminPortal() {
             {/* DISCOUNTED PRICES PREVIEW PANEL */}
             <div className="admin-card">
               <div className="admin-card-title">
-                📊 Prices Preview Panel ({saleForm.discount}% Discount — {saleForm.target === "both" ? "Both Adult & Kids" : saleForm.target === "adult" ? "Only Adult Products" : "Only Kids Products"})
+                Prices Preview Panel ({saleForm.discount}% Discount — {saleForm.target === "both" ? "Both Adult & Kids" : saleForm.target === "adult" ? "Only Adult Products" : "Only Kids Products"})
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 14 }}>
                 {/* ADULT PRODUCTS PREVIEW */}
@@ -1025,7 +1025,7 @@ export function AdminPortal() {
                       <div key={`adult_${p.id}`} style={{ background: "var(--bg2)", borderRadius: 10, border: "1px solid var(--border)", padding: "14px 16px" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                           <span style={{ fontSize: 11, fontWeight: 700, background: "rgba(200,75,47,0.15)", color: "var(--accent)", padding: "2px 8px", borderRadius: 4 }}>
-                            🛍️ Adult Tee #{p.id}
+                            Adult Tee #{p.id}
                           </span>
                           <span style={{ fontSize: 11, color: "var(--text2)", fontWeight: 600 }}>{p.fit}</span>
                         </div>
@@ -1053,7 +1053,7 @@ export function AdminPortal() {
                       <div key={`kids_${kp.id}`} style={{ background: "var(--bg2)", borderRadius: 10, border: "1px solid var(--border)", padding: "14px 16px" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                           <span style={{ fontSize: 11, fontWeight: 700, background: "rgba(16,185,129,0.15)", color: "#10b981", padding: "2px 8px", borderRadius: 4 }}>
-                            🎈 Kids Item #{kp.id}
+                            Kids Item #{kp.id}
                           </span>
                           <span style={{ fontSize: 11, color: "var(--text2)", fontWeight: 600 }}>{kp.tags?.[0] || "Kids"}</span>
                         </div>
@@ -1199,7 +1199,7 @@ export function AdminPortal() {
             <div className="admin-card">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
                 <div className="admin-card-title" style={{ margin: 0 }}>
-                  📋 Orders Directory ({orders.length} orders)
+                  Orders Directory ({orders.length} orders)
                 </div>
 
                 {/* FILTER BY ORDER ID */}
@@ -1417,7 +1417,7 @@ export function AdminPortal() {
                               return (
                                 <div style={{ marginTop: 14, padding: "10px 14px", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 8, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                                   <span style={{ fontSize: 12, fontWeight: 700, whiteSpace: "nowrap", color: "var(--text)" }}>
-                                    ➕ Add Product to Order:
+                                    Add Product to Order:
                                   </span>
                                   <select
                                     id={`add_prod_${ord.id}`}

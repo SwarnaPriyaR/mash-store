@@ -16,7 +16,7 @@ export default function HomePage() {
       <div className="hero-bg-text">MASH</div>
       <div className="hero-content">
         <div className="hero-eyebrow">
-          <span>✦</span> New Collection 2026
+          New Collection 2026
         </div>
         <h1 className="hero-title">
           WEAR YOUR
@@ -28,7 +28,7 @@ export default function HomePage() {
         </p>
         <div style={{ display: "flex", gap: "16px", justifyContent: "center", alignItems: "center", flexWrap: "wrap" }}>
           <Link href="/products" className="cta-btn" style={{ textDecoration: "none" }}>
-            All Drops →
+            All Drops
           </Link>
           <Link
             href="/kids"
