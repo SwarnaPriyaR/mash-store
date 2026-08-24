@@ -684,6 +684,35 @@ export async function addOrderItemToOrder(
   }
 }
 
+/** Delete an OrderItem, recalculate order totalAmount, and restore stock if Paid */
+export async function deleteOrderItem(itemId: string): Promise<OrderData | null> {
+  try {
+    const item = await prisma.orderItem.findUnique({ where: { itemId } });
+    if (!item) return null;
+
+    const orderId = item.orderId;
+    await prisma.orderItem.delete({ where: { itemId } });
+
+    const remainingItems = await prisma.orderItem.findMany({ where: { orderId } });
+    const newTotal = remainingItems.reduce((sum, it) => sum + it.subtotal, 0);
+
+    const updatedOrder = await prisma.order.update({
+      where: { id: orderId },
+      data: { totalAmount: newTotal },
+      include: { items: true },
+    });
+
+    if (updatedOrder.status === "Paid") {
+      await increaseProductStock([{ productId: item.productId, quantity: item.quantity, isKids: item.isKids }]);
+    }
+
+    return updatedOrder as unknown as OrderData;
+  } catch (err) {
+    console.error("Failed to delete order item:", err);
+    return null;
+  }
+}
+
 /** Delete an order by ID */
 export async function deleteOrder(id: string): Promise<boolean> {
   try {
