@@ -80,6 +80,14 @@ export function AdminPortal() {
   const [orderIdFilter, setOrderIdFilter] = useState("");
   const [orderSelectedProduct, setOrderSelectedProduct] = useState<Record<string, string>>({});
 
+  // Sale Scheduler state
+  const [saleForm, setSaleForm] = useState({
+    discount: sale.discount || 20,
+    durationHours: sale.durationHours || 24,
+    mode: "instant" as "instant" | "scheduled",
+    startTime: "",
+  });
+
   const [editValues, setEditValues] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -509,16 +517,48 @@ export function AdminPortal() {
 
       setOrders((prev) => prev.map((o) => (o.id === orderId ? updated : o)));
 
-      if (updated.status === "Paid") {
-        await refreshProducts();
-        await refreshKidsProducts();
-      }
-
       showToast(`🎉 Item added to Order ${orderId}!`);
     } catch (err) {
       showToast(`❌ Failed to add order item: ${String(err)}`);
     }
   }, [products, kidsProducts, showToast, refreshProducts, refreshKidsProducts]);
+
+  const handleSetSale = (e: React.FormEvent) => {
+    e.preventDefault();
+    let startMs = Date.now();
+    if (saleForm.mode === "scheduled" && saleForm.startTime) {
+      startMs = new Date(saleForm.startTime).getTime();
+    }
+    const durationMs = saleForm.durationHours * 3600 * 1000;
+    const endMs = startMs + durationMs;
+
+    setSale({
+      active: true,
+      discount: saleForm.discount,
+      start: startMs,
+      end: endMs,
+      startTime: saleForm.mode === "scheduled" ? startMs : null,
+      durationHours: saleForm.durationHours,
+    });
+
+    showToast(
+      saleForm.mode === "instant"
+        ? `⚡ Instant ${saleForm.discount}% Flash Sale Activated!`
+        : `📅 Sale Scheduled for ${new Date(startMs).toLocaleString()}!`
+    );
+  };
+
+  const handleCancelSale = () => {
+    setSale({
+      active: false,
+      discount: 0,
+      start: 0,
+      end: 0,
+      startTime: null,
+      durationHours: 0,
+    });
+    showToast("🛑 Flash Sale Deactivated");
+  };
 
   if (!mounted) return null;
 
@@ -573,6 +613,7 @@ export function AdminPortal() {
             <li><button className={`admin-sidebar-btn ${currentSection === "dashboard" ? "active" : ""}`} onClick={() => setCurrentSection("dashboard")}>📊 Dashboard</button></li>
             <li><button className={`admin-sidebar-btn ${currentSection === "inventory" ? "active" : ""}`} onClick={() => setCurrentSection("inventory")}>👕 Adult Products</button></li>
             <li><button className={`admin-sidebar-btn ${currentSection === "kids-inventory" ? "active" : ""}`} onClick={() => setCurrentSection("kids-inventory")}>🎈 Kids Products</button></li>
+            <li><button className={`admin-sidebar-btn ${currentSection === "sale" ? "active" : ""}`} onClick={() => setCurrentSection("sale")}>⚡ Sale Scheduler</button></li>
             <li><button className={`admin-sidebar-btn ${currentSection === "orders" ? "active" : ""}`} onClick={() => setCurrentSection("orders")}>📋 Manual Orders</button></li>
           </ul>
         </div>
@@ -805,6 +846,153 @@ export function AdminPortal() {
                   <button className="admin-del-btn" onClick={() => removeKidsProduct(kp.id)}><Icon.Trash /></button>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* SALE SCHEDULER SECTION */}
+        {currentSection === "sale" && (
+          <div>
+            <header className="admin-page-header">
+              <div className="admin-page-title-group">
+                <h1 className="admin-title">FLASH SALE SCHEDULER</h1>
+                <p className="admin-sub">Set global discounts, instant sales, or scheduled countdown offers across all store products</p>
+              </div>
+            </header>
+
+            {/* CURRENT SALE STATUS BANNER */}
+            <div
+              style={{
+                background: isSaleActive ? "#dcfce7" : "var(--bg2)",
+                border: isSaleActive ? "1.5px solid #16a34a" : "1px solid var(--border)",
+                borderRadius: 14,
+                padding: "20px 24px",
+                marginBottom: 24,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 16,
+              }}
+            >
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: isSaleActive ? "#15803d" : "var(--text2)" }}>
+                  {isSaleActive ? "⚡ ACTIVE STOREWIDE SALE" : "💤 NO SALE CURRENTLY ACTIVE"}
+                </div>
+                <div style={{ fontSize: 24, fontWeight: 800, marginTop: 4, color: isSaleActive ? "#15803d" : "var(--text)" }}>
+                  {isSaleActive ? `${sale.discount}% OFF STOREWIDE` : "Standard Catalog Pricing"}
+                </div>
+                {isSaleActive && (
+                  <div style={{ fontSize: 13, color: "#166534", marginTop: 4 }}>
+                    Sale ends on: <b>{new Date(sale.end).toLocaleString("en-IN")}</b>
+                  </div>
+                )}
+              </div>
+
+              {isSaleActive && (
+                <button
+                  type="button"
+                  onClick={handleCancelSale}
+                  style={{
+                    padding: "10px 20px",
+                    borderRadius: 8,
+                    border: "none",
+                    background: "#dc2626",
+                    color: "#ffffff",
+                    fontWeight: 700,
+                    fontSize: 13,
+                    cursor: "pointer",
+                  }}
+                >
+                  🛑 STOP & CANCEL SALE
+                </button>
+              )}
+            </div>
+
+            {/* SALE SCHEDULER FORM */}
+            <div className="admin-card" style={{ marginBottom: 24 }}>
+              <div className="admin-card-title">⚡ Configure Storewide Flash Sale</div>
+              <form onSubmit={handleSetSale}>
+                <div className="sale-form">
+                  <div className="form-field">
+                    <label className="form-label">Activation Mode</label>
+                    <select
+                      className="form-input"
+                      value={saleForm.mode}
+                      onChange={(e) => setSaleForm({ ...saleForm, mode: e.target.value as "instant" | "scheduled" })}
+                    >
+                      <option value="instant">Instant Activation (Right Now)</option>
+                      <option value="scheduled">Scheduled Date & Time</option>
+                    </select>
+                  </div>
+
+                  <div className="form-field">
+                    <label className="form-label">Discount Percentage (%)</label>
+                    <input
+                      className="form-input"
+                      type="number"
+                      min={1}
+                      max={90}
+                      value={saleForm.discount}
+                      onChange={(e) => setSaleForm({ ...saleForm, discount: Math.min(90, Math.max(1, parseInt(e.target.value) || 1)) })}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-field">
+                    <label className="form-label">Duration (Hours)</label>
+                    <input
+                      className="form-input"
+                      type="number"
+                      min={1}
+                      max={720}
+                      value={saleForm.durationHours}
+                      onChange={(e) => setSaleForm({ ...saleForm, durationHours: Math.max(1, parseInt(e.target.value) || 1) })}
+                      required
+                    />
+                  </div>
+
+                  {saleForm.mode === "scheduled" && (
+                    <div className="form-field full">
+                      <label className="form-label">Offer Starting Date & Time</label>
+                      <input
+                        className="form-input"
+                        type="datetime-local"
+                        value={saleForm.startTime}
+                        onChange={(e) => setSaleForm({ ...saleForm, startTime: e.target.value })}
+                        required
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  className="admin-action-btn"
+                  style={{ background: "var(--accent)", color: "#fff", borderColor: "var(--accent)", padding: "12px 28px", marginTop: "20px", fontSize: "14px" }}
+                >
+                  {saleForm.mode === "instant" ? "⚡ Activate Instant Sale" : "📅 Lock & Schedule Offer"}
+                </button>
+              </form>
+            </div>
+
+            {/* DISCOUNTED PRICES PREVIEW PANEL */}
+            <div className="admin-card">
+              <div className="admin-card-title">📊 Prices Preview Panel ({saleForm.discount}% Discount)</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12 }}>
+                {products.map((p) => {
+                  const saleP = Math.round(p.basePrice * (1 - saleForm.discount / 100));
+                  return (
+                    <div key={p.id} style={{ background: "var(--bg2)", borderRadius: 10, border: "1px solid var(--border)", padding: "12px 14px" }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{p.name}</div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+                        <span style={{ fontFamily: "var(--font-bebas), 'Bebas Neue', sans-serif", fontSize: 18, color: "var(--accent)" }}>₹{saleP}</span>
+                        <span style={{ fontSize: 12, color: "var(--text2)", textDecoration: "line-through" }}>₹{p.basePrice}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
