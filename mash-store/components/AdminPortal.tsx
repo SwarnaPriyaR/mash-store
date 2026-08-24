@@ -522,6 +522,28 @@ export function AdminPortal() {
     }
   }, [products, kidsProducts, sale, showToast, refreshProducts, refreshKidsProducts]);
 
+  const handleRemoveOrderItem = useCallback(async (orderId: string, itemId: string) => {
+    try {
+      const res = await fetch(`/api/orders/removeItem/${encodeURIComponent(itemId)}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) throw new Error("Failed to delete item");
+      const updated: OrderData = await res.json();
+
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? updated : o)));
+
+      if (updated.status === "Paid") {
+        await refreshProducts();
+        await refreshKidsProducts();
+      }
+
+      showToast(`🗑️ Line item removed from Order ${orderId}`);
+    } catch (err) {
+      showToast(`❌ Failed to remove line item: ${String(err)}`);
+    }
+  }, [showToast, refreshProducts, refreshKidsProducts]);
+
   const handleSetSale = (e: React.FormEvent) => {
     e.preventDefault();
     let startMs = Date.now();
@@ -1333,6 +1355,7 @@ export function AdminPortal() {
                                       <th style={{ padding: "8px 12px", fontWeight: 700 }}>Quantity</th>
                                       <th style={{ padding: "8px 12px", fontWeight: 700 }}>Unit Price</th>
                                       <th style={{ padding: "8px 12px", fontWeight: 700, textAlign: "right" }}>Total Price</th>
+                                      <th style={{ padding: "8px 12px", fontWeight: 700, textAlign: "right" }}>Actions</th>
                                     </tr>
                                   </thead>
                                   <tbody>
@@ -1357,6 +1380,16 @@ export function AdminPortal() {
                                           <td style={{ padding: "8px 12px" }}>₹{it.unitPrice}</td>
                                           <td style={{ padding: "8px 12px", fontWeight: 700, color: "var(--accent)", textAlign: "right" }}>
                                             ₹{subtotalVal}
+                                          </td>
+                                          <td style={{ padding: "8px 12px", textAlign: "right" }}>
+                                            <button
+                                              type="button"
+                                              onClick={() => handleRemoveOrderItem(ord.id, itemIdFormatted)}
+                                              title="Delete Order Line Item"
+                                              style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 14 }}
+                                            >
+                                              <Icon.Trash />
+                                            </button>
                                           </td>
                                         </tr>
                                       );
