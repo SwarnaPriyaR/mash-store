@@ -5,7 +5,11 @@ import crypto from "crypto";
 export async function POST(req: Request) {
   try {
     const { password } = await req.json();
-    const expectedPass = process.env.ADMIN_PASSWORD || "mash123";
+    const expectedPass = process.env.ADMIN_PASSWORD;
+
+    if (!expectedPass) {
+      return NextResponse.json({ error: "ADMIN_PASSWORD is not set in environment" }, { status: 500 });
+    }
 
     if (!password || password !== expectedPass) {
       return NextResponse.json({ error: "Incorrect admin password" }, { status: 401 });
