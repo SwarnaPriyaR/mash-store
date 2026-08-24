@@ -154,7 +154,15 @@ export function AdminPortal() {
   }, [authed, refreshProducts, refreshKidsProducts, refreshOrders]);
 
   const handleLoginSubmit = () => {
-    if (adminPass === "mash123") {
+    const inputPass = adminPass.trim();
+    const envPass = (process.env.ADMIN_PASSWORD || "").trim();
+
+    const isCorrect =
+      inputPass === "mash123" ||
+      inputPass.toLowerCase() === "mash123" ||
+      (envPass !== "" && inputPass === envPass);
+
+    if (isCorrect) {
       setAuthed(true);
       sessionStorage.setItem("admin_authed", "true");
       showToast("🔓 Access Granted");
@@ -447,14 +455,14 @@ export function AdminPortal() {
               </svg>
             </div>
             <h2 className="modal-title" style={{ color: "#f0ebe3", fontSize: "20px" }}>ADMIN PORTAL</h2>
-            <p className="modal-sub" style={{ color: "#8a8075" }}>Password required for access</p>
+            <p className="modal-sub" style={{ color: "#8a8075" }}>Enter admin password (Default: mash123)</p>
           </div>
           <div className="form-field">
             <label className="form-label" style={{ color: "#8a8075" }}>Password</label>
             <input
               type="password"
               className="form-input"
-              placeholder="••••••••"
+              placeholder="e.g. mash123"
               value={adminPass}
               onChange={(e) => setAdminPass(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleLoginSubmit()}
