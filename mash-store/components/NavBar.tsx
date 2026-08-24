@@ -51,6 +51,10 @@ export function NavBar() {
           />
         </Link>
         <div className="nav-right">
+          <Link href="/orders" className="auth-btn" style={{ textDecoration: "none" }}>
+            📦 Orders
+          </Link>
+
           <button className="icon-btn" onClick={() => setDark(!dark)} title="Toggle theme">
             {dark ? <Icon.Sun /> : <Icon.Moon />}
           </button>

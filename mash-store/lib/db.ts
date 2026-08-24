@@ -462,6 +462,25 @@ export async function getAllOrders(): Promise<OrderData[]> {
   }
 }
 
+/** Get orders for a specific customer email sorted by creation date descending */
+export async function getCustomerOrders(email: string): Promise<OrderData[]> {
+  try {
+    const trimmed = email.trim();
+    if (!trimmed) return [];
+    const list = await prisma.order.findMany({
+      where: {
+        customerId: { equals: trimmed, mode: "insensitive" },
+      },
+      include: { items: true },
+      orderBy: { createdAt: "desc" },
+    });
+    return list as unknown as OrderData[];
+  } catch (err) {
+    console.error("Failed to fetch customer orders:", err);
+    return [];
+  }
+}
+
 /** Reduce product stock for items when an order status becomes Paid */
 export async function reduceProductStock(items: { productId: number; quantity: number; isKids?: boolean }[]) {
   for (const item of items) {
