@@ -15,8 +15,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Incorrect admin password" }, { status: 401 });
     }
 
-    // Generate secure session token hash
-    const sessionToken = crypto.createHash("sha256").update(`${expectedPass}_mash_secret_salt`).digest("hex");
+    // Generate secure session token hash using environment secret salt
+    const secretSalt = process.env.ADMIN_SECRET_SALT || expectedPass;
+    const sessionToken = crypto.createHash("sha256").update(`${expectedPass}_${secretSalt}`).digest("hex");
 
     const cookieStore = await cookies();
     cookieStore.set("admin_session", sessionToken, {

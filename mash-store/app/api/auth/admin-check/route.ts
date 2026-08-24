@@ -9,7 +9,8 @@ export async function GET() {
       return NextResponse.json({ authed: false });
     }
 
-    const expectedToken = crypto.createHash("sha256").update(`${expectedPass}_mash_secret_salt`).digest("hex");
+    const secretSalt = process.env.ADMIN_SECRET_SALT || expectedPass;
+    const expectedToken = crypto.createHash("sha256").update(`${expectedPass}_${secretSalt}`).digest("hex");
 
     const cookieStore = await cookies();
     const token = cookieStore.get("admin_session")?.value;
