@@ -143,12 +143,19 @@ nextjs-portal, #__next-build-watcher, [class*="nextjs-toast"], [data-nextjs-toas
 /* ── Page wrapper ── */
 .page { min-height: 100vh; }
 
+:root {
+  --total-nav-height: 64px;
+}
+
 /* ── HERO ── */
 .hero {
-  min-height: calc(100vh - 64px);
+  min-height: calc(100vh - var(--total-nav-height, 64px));
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  text-align: center; padding: 48px 24px;
+  text-align: center;
+  padding-top: calc(var(--total-nav-height, 64px) + 32px) !important;
+  padding-bottom: 48px; padding-left: 24px; padding-right: 24px;
   background: var(--bg); position: relative; overflow: hidden;
+  transition: padding-top 0.2s ease;
 }
 .hero-bg-text {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%, -52%);
@@ -192,7 +199,14 @@ nextjs-portal, #__next-build-watcher, [class*="nextjs-toast"], [data-nextjs-toas
 .strip-dot { width: 8px; height: 8px; border-radius: 99px; background: var(--accent); }
 
 /* ── Products ── */
-.products-page { background: var(--bg); padding: 32px; }
+.products-page {
+  background: var(--bg);
+  padding-top: calc(var(--total-nav-height, 64px) + 32px) !important;
+  padding-bottom: 48px;
+  padding-left: 32px;
+  padding-right: 32px;
+  transition: padding-top 0.2s ease;
+}
 .products-header { margin-bottom: 24px; }
 .products-title { font-family: var(--font-bebas), 'Bebas Neue', sans-serif; font-size: 52px; letter-spacing: 0.04em; }
 .products-sub { color: var(--text2); font-size: 15px; margin-top: 4px; }

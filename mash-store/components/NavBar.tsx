@@ -8,7 +8,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Icon } from "./Icon";
 import { useCart } from "./CartProvider";
 import { useSale } from "./SaleProvider";
@@ -21,16 +21,20 @@ export function NavBar() {
   const [authModal, setAuthModal] = useState<"login" | "signup" | null>(null);
   const pathname = usePathname();
 
-  // Don't render nav on admin page — admin has its own sidebar
-  if (pathname === "/admin") return null;
-
   const cartCount = cart.length;
   const wishCount = wishlist.length;
   const isSaleActive = sale.active && Date.now() >= sale.start && Date.now() <= sale.end;
   const isUpcomingSale = !isSaleActive && sale.startTime != null && Date.now() < Number(sale.startTime);
   const hasBanner = isSaleActive || isUpcomingSale;
 
-  const isKidsPage = pathname === "/kids";
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.style.setProperty("--total-nav-height", hasBanner ? "104px" : "64px");
+    }
+  }, [hasBanner]);
+
+  // Don't render nav on admin page — admin has its own sidebar
+  if (pathname === "/admin") return null;
 
   return (
     <>
@@ -51,8 +55,8 @@ export function NavBar() {
           />
         </Link>
         <div className="nav-right">
-          <Link href="/orders" className="auth-btn" style={{ textDecoration: "none" }}>
-            📦 Orders
+          <Link href="/orders" className="auth-btn" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <Icon.Package /> Orders
           </Link>
 
           <button className="icon-btn" onClick={() => setDark(!dark)} title="Toggle theme">
